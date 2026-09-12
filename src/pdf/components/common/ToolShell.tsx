@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BrandHeader } from "@/components/BrandHeader";
 
 interface ToolShellProps {
   title: string;
@@ -24,30 +25,23 @@ export function ToolShell({
 }: ToolShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur">
-        <div
-          className={cn(
-            "mx-auto flex w-full items-center gap-3 px-4 py-3 sm:px-6",
-            wide ? "max-w-[1600px]" : "max-w-[1240px]",
-          )}
-        >
+      <BrandHeader>
+        <div className="flex min-w-0 items-center gap-3">
           <Link
             href="/pdf"
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none"
+            className="hidden rounded-sm text-[13px] font-medium tracking-[0.04em] text-[#526057] transition-colors hover:text-[#20372b] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6f8368]/60 sm:inline"
           >
-            <ArrowLeft className="size-4" aria-hidden />
-            <span className="hidden sm:inline">PDF tools</span>
+            PDF tools
           </Link>
-          <div className="h-5 w-px bg-border" aria-hidden />
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-base font-semibold tracking-tight text-foreground">{title}</h1>
+            <h1 className="truncate text-sm font-semibold tracking-tight text-foreground">{title}</h1>
             {description && (
-              <p className="truncate text-xs text-muted-foreground">{description}</p>
+              <p className="hidden truncate text-xs text-muted-foreground md:block">{description}</p>
             )}
           </div>
           {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
-      </header>
+      </BrandHeader>
 
       <main
         className={cn(

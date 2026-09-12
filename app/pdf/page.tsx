@@ -1,26 +1,17 @@
-import Link from "next/link";
-import { ArrowLeft, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
+import { BrandHeader } from "@/components/BrandHeader";
 import { ToolCard } from "@/pdf/components/common/ToolCard";
 import { PDF_TOOL_CATEGORIES } from "@/pdf/tools";
 
 export default function PdfHomePage() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-[1240px] items-center justify-between px-6 py-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="size-4" aria-hidden />
-            <img className="h-7 w-auto max-w-[160px] object-contain" src="/logo.png" alt="CraftBuddy Tools" />
-          </Link>
+      <BrandHeader>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             <Lock className="size-3" aria-hidden />
             Local processing
           </span>
-        </div>
-      </header>
+      </BrandHeader>
 
       <main className="mx-auto w-full max-w-[1240px] px-6 py-10">
         <div className="max-w-[720px]">

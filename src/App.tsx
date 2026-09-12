@@ -21,6 +21,7 @@ import {
 import { PricingCalculator } from "./PricingCalculator";
 import QRDesigner from "./qr/QRDesigner";
 import { LandingPage } from "./components/landing/LandingPage";
+import { BrandHeader } from "./components/BrandHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -76,10 +77,7 @@ function loadProfile(): PrintProfile {
 function Layout() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-6 py-5 sm:px-8 lg:px-10">
-        <Link className="flex items-center" to="/">
-          <img className="h-7 w-auto max-w-[210px] object-contain" src="/logo.png" alt="CraftBuddy Tools" />
-        </Link>
+      <BrandHeader>
         <nav className="flex flex-wrap items-center justify-end gap-3 sm:gap-6">
           {[
             ["/print-estimator", "Print estimator"],
@@ -104,7 +102,7 @@ function Layout() {
             </a>
           </Button>
         </nav>
-      </header>
+      </BrandHeader>
       <Outlet />
       <footer className="mx-auto w-full max-w-[1240px] px-6 py-8 text-sm text-muted-foreground sm:px-8 lg:px-10">
         Private by design. Your files are processed in this browser.
