@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BrowserRouter, Link, NavLink, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Link, NavLink, Outlet, Route, Routes } from "react-router-dom";
 import {
   analyzeImage,
   analyzePdf,
@@ -20,6 +20,7 @@ import {
 } from "./lib/calculator";
 import { PricingCalculator } from "./PricingCalculator";
 import QRDesigner from "./qr/QRDesigner";
+import { LandingPage } from "./components/landing/LandingPage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -72,26 +73,21 @@ function loadProfile(): PrintProfile {
   }
 }
 
-function Layout({ children }: { children: React.ReactNode }) {
+function Layout() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-7 py-5 max-[760px]:flex-col max-[760px]:items-start max-[760px]:gap-5">
-        <Link className="flex items-center gap-2.5 font-bold tracking-tight" to="/">
-          <span className="grid size-8 place-items-center rounded-lg bg-foreground text-xs font-bold text-background">
-            CB
-          </span>
-          <span>
-            CraftBuddy <span className="text-primary">Tools</span>
-          </span>
+      <header className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-6 py-5 sm:px-8 lg:px-10">
+        <Link className="flex items-center" to="/">
+          <img className="h-7 w-auto max-w-[210px] object-contain" src="/logo.png" alt="CraftBuddy Tools" />
         </Link>
-        <nav className="flex items-center gap-1 max-[760px]:flex-wrap">
+        <nav className="flex flex-wrap items-center justify-end gap-3 sm:gap-6">
           {[
             ["/print-estimator", "Print estimator"],
             ["/cost-estimator", "Cost estimator"],
             ["/qr-generator", "QR generator"],
             ["/profiles", "Profiles"],
           ].map(([to, label]) => (
-            <Button key={to} variant="ghost" size="sm" asChild>
+            <Button key={to} className="h-auto rounded-none px-0 py-0 text-sm" variant="ghost" asChild>
               <NavLink
                 to={to}
                 className={({ isActive }) =>
@@ -102,114 +98,18 @@ function Layout({ children }: { children: React.ReactNode }) {
               </NavLink>
             </Button>
           ))}
-          <Button variant="ghost" size="sm" asChild>
+          <Button className="h-auto rounded-none px-0 py-0 text-sm" variant="ghost" asChild>
             <a href="/pdf" className="text-muted-foreground">
               PDF tools
             </a>
           </Button>
         </nav>
       </header>
-      {children}
-      <footer className="mx-auto w-full max-w-[1240px] px-7 py-8 text-[11px] text-muted-foreground">
+      <Outlet />
+      <footer className="mx-auto w-full max-w-[1240px] px-6 py-8 text-sm text-muted-foreground sm:px-8 lg:px-10">
         Private by design. Your files are processed in this browser.
       </footer>
     </div>
-  );
-}
-
-function Home() {
-  return (
-    <main className="mx-auto w-full max-w-[1184px] px-7 py-24 max-[760px]:px-5 max-[760px]:py-16">
-      <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-        Craft tools for real-world pricing
-      </div>
-      <h1 className="mt-5 font-heading text-[clamp(42px,7vw,76px)] font-extrabold leading-none tracking-[-0.055em]">
-        Know your cost.
-        <br />
-        <span className="text-primary">Price with confidence.</span>
-      </h1>
-      <p className="mt-6 max-w-[580px] text-lg leading-relaxed text-muted-foreground">
-        Focused tools for makers, print shops, and small businesses.
-        No account, no upload queue, no clutter.
-      </p>
-      <div className="mt-16 grid grid-cols-2 gap-[18px] max-[760px]:mt-10 max-[760px]:grid-cols-1">
-        <Card className="min-h-[315px] border-[#c8b9a9] bg-[#ead9c4] transition-transform hover:-translate-y-1 hover:shadow-xl">
-          <CardContent className="flex h-full flex-col p-[30px]">
-            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-              01 / production
-            </div>
-            <h2 className="mt-14 font-heading text-[31px] font-bold tracking-[-0.055em]">
-              Print cost estimator
-            </h2>
-            <p className="max-w-[350px] leading-relaxed text-[#665d56]">
-            Read a design, account for paper and ink, then set a price that
-            protects your margin.
-            </p>
-            <Button className="mt-auto w-fit px-0" variant="link" asChild>
-              <Link to="/print-estimator">Estimate a print job ↗</Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card className="min-h-[315px] border-[#c8b9a9] bg-[#dbe3dc] transition-transform hover:-translate-y-1 hover:shadow-xl">
-          <CardContent className="flex h-full flex-col p-[30px]">
-            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-              02 / product
-            </div>
-            <h2 className="mt-14 font-heading text-[31px] font-bold tracking-[-0.055em]">
-              Product cost estimator
-            </h2>
-            <p className="max-w-[350px] leading-relaxed text-[#665d56]">
-            Build a cost base from materials, labor, and overhead with simple
-            manual inputs.
-            </p>
-            <Button className="mt-auto w-fit px-0" variant="link" asChild>
-              <Link to="/cost-estimator">Price a product ↗</Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card className="min-h-[315px] border-[#c8b9a9] bg-[#e6ded6] transition-transform hover:-translate-y-1 hover:shadow-xl">
-          <CardContent className="flex h-full flex-col p-[30px]">
-            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-              03 / creative
-            </div>
-            <h2 className="mt-14 font-heading text-[31px] font-bold tracking-[-0.055em]">
-              QR code designer
-            </h2>
-            <p className="max-w-[350px] leading-relaxed text-[#665d56]">
-              Create branded QR codes locally with flexible styling, logo
-              support, and production-ready exports.
-            </p>
-            <Button className="mt-auto w-fit px-0" variant="link" asChild>
-              <Link to="/qr-generator">Design a QR code ↗</Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card className="col-span-2 min-h-[200px] border-[#c8b9a9] bg-[#e9e2f0] transition-transform hover:-translate-y-1 hover:shadow-xl max-[760px]:col-span-1">
-          <CardContent className="flex h-full flex-col p-[30px]">
-            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-              04 / documents
-            </div>
-            <h2 className="mt-8 font-heading text-[31px] font-bold tracking-[-0.055em]">
-              PDF tools
-            </h2>
-            <p className="max-w-[520px] leading-relaxed text-[#665d56]">
-              Edit, sign, merge, split, convert, watermark, and compress PDFs.
-              Every document stays on your device.
-            </p>
-            <Button className="mt-auto w-fit px-0" variant="link" asChild>
-              <a href="/pdf">Open PDF tools ↗</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-      <div className="mt-8 flex gap-5 text-xs text-muted-foreground max-[760px]:block">
-        <strong className="text-foreground">Local processing</strong>
-        <span className="max-[760px]:mt-2 max-[760px]:block">
-          Images and PDFs never leave this browser. Reusable profiles stay on
-          this device.
-        </span>
-      </div>
-    </main>
   );
 }
 
@@ -236,7 +136,7 @@ function Field({
       <div className="relative">
         {prefix && <i className="absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-xs not-italic text-muted-foreground">{prefix}</i>}
         <Input
-          className={`h-[42px] rounded border-[#ded6cd] bg-[#fffdf9] text-[#282421] outline-none focus-visible:border-[#bb563a] focus-visible:ring-[3px] focus-visible:ring-[#bb563a]/[.11] ${prefix ? "pl-[34px]" : ""} ${suffix ? "pr-[35px]" : ""}`}
+           className={`h-[42px] rounded border-[#cbd8c3] bg-[#fbfcf8] text-[#2f3d32] outline-none focus-visible:border-[#5d7052] focus-visible:ring-[3px] focus-visible:ring-[#5d7052]/[.18] ${prefix ? "pl-[34px]" : ""} ${suffix ? "pr-[35px]" : ""}`}
           type="number"
           min="0"
           max={max}
@@ -452,7 +352,7 @@ function PrintEstimator() {
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_350px] items-start gap-[22px] max-[760px]:grid-cols-1">
         <section className="flex flex-col gap-[14px]">
-          <div className="border border-[#ded6cd] bg-[#fffdf9] p-6 max-[760px]:p-[18px]">
+          <div className="border border-[#cbd8c3] bg-[#fbfcf8] p-6 max-[760px]:p-[18px]">
             <div className="mb-[22px] flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="font-heading text-[11px] font-bold text-primary">01</span>
@@ -464,7 +364,7 @@ function PrintEstimator() {
                 </span>
               )}
             </div>
-            <label className="my-[18px] mb-1 flex items-center justify-between gap-4 border border-[#ded6cd] bg-[#fbf6ed] px-3.5 py-3">
+            <label className="my-[18px] mb-1 flex items-center justify-between gap-4 border border-[#cbd8c3] bg-[#f2f6ee] px-3.5 py-3">
               <span className="flex flex-col gap-[3px]">
                 <strong>AI Assist</strong>
                 <small className="text-[11px] text-muted-foreground">
@@ -485,7 +385,7 @@ function PrintEstimator() {
               />
             </label>
             <button
-              className="flex min-h-[135px] w-full flex-col items-center justify-center gap-2 border border-dashed border-[#c8b9a9] bg-[#fbf6ed] text-[#282421] disabled:opacity-75"
+              className="flex min-h-[135px] w-full flex-col items-center justify-center gap-2 border border-dashed border-[#b7c7ad] bg-[#f2f6ee] text-[#2f3d32] disabled:opacity-75"
               onClick={() => inputRef.current?.click()}
               disabled={processing}
             >
@@ -496,8 +396,8 @@ function PrintEstimator() {
                   : "JPG, PNG, WEBP, or PDF · up to 20 PDF pages"}
               </span>
               {processing && (
-                  <span className="mt-2 h-1 w-[70%] bg-[#e4d9cb]">
-                   <b className="block h-full bg-[#bb563a] transition-[width] duration-200" style={{ width: `${progress}%` }} />
+                  <span className="mt-2 h-1 w-[70%] bg-[#dce7d5]">
+                    <b className="block h-full bg-[#5d7052] transition-[width] duration-200" style={{ width: `${progress}%` }} />
                 </span>
               )}
             </button>
@@ -508,13 +408,13 @@ function PrintEstimator() {
               accept="image/*,.pdf,application/pdf"
               onChange={(event) => handleFile(event.target.files?.[0])}
             />
-            {error && <div className="mt-[14px] bg-[#f8e4df] p-[11px] text-xs text-[#9b3e2f]">{error}</div>}
+            {error && <div className="mt-[14px] bg-[#f3e1dc] p-[11px] text-xs text-[#8b4b44]">{error}</div>}
             {artworkFile && pages.length === 0 && !processing && (
-              <div className="mt-[14px] flex items-center gap-2 text-xs text-[#557463]">
-                <span className="size-[7px] shrink-0 rounded-full bg-[#557463]" />
+              <div className="mt-[14px] flex items-center gap-2 text-xs text-[#5f7d4f]">
+                <span className="size-[7px] shrink-0 rounded-full bg-[#5f7d4f]" />
                 {fileName} is ready to analyze
                 <button
-                  className="ml-0 border border-[#bb563a] bg-[#bb563a] px-3 py-2 text-xs font-bold text-[#fff8ee] hover:bg-[#8f382c] disabled:cursor-not-allowed disabled:opacity-55"
+                  className="ml-0 border border-[#5d7052] bg-[#5d7052] px-3 py-2 text-xs font-bold text-[#f7faf4] hover:bg-[#4b5d42] disabled:cursor-not-allowed disabled:opacity-55"
                   onClick={analyzeArtwork}
                   disabled={aiAssistEnabled && aiCooldown > 0}
                 >
@@ -533,13 +433,13 @@ function PrintEstimator() {
               </div>
             )}
             {pages.length > 0 && (
-              <div className="mt-[14px] flex items-center gap-2 text-xs text-[#557463]">
-                <span className="size-[7px] shrink-0 rounded-full bg-[#557463]" />
+              <div className="mt-[14px] flex items-center gap-2 text-xs text-[#5f7d4f]">
+                <span className="size-[7px] shrink-0 rounded-full bg-[#5f7d4f]" />
                 {pages.length} page{pages.length === 1 ? "" : "s"} analyzed ·
                 rendered ink-load estimate{" "}
                 {aiAssistEnabled && (
                   <button
-                    className="ml-0 border border-[#bb563a] bg-[#bb563a] px-3 py-2 text-xs font-bold text-[#fff8ee] hover:bg-[#8f382c] disabled:cursor-not-allowed disabled:opacity-55"
+                    className="ml-0 border border-[#5d7052] bg-[#5d7052] px-3 py-2 text-xs font-bold text-[#f7faf4] hover:bg-[#4b5d42] disabled:cursor-not-allowed disabled:opacity-55"
                     onClick={runAiAssist}
                     disabled={
                       aiBusy ||
@@ -567,10 +467,10 @@ function PrintEstimator() {
               </div>
             )}
             {aiAssistEnabled && aiResult && (
-              <div className="mt-[14px] bg-[#fbf6ed] p-3 text-[13px] leading-[1.5] text-[#282421]">{aiResult}</div>
+              <div className="mt-[14px] bg-[#f2f6ee] p-3 text-[13px] leading-[1.5] text-[#2f3d32]">{aiResult}</div>
             )}
           </div>
-          <div className="border border-[#ded6cd] bg-[#fffdf9] p-6 max-[760px]:p-[18px]">
+          <div className="border border-[#cbd8c3] bg-[#fbfcf8] p-6 max-[760px]:p-[18px]">
             <div className="mb-[22px] flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="font-heading text-[11px] font-bold text-primary">02</span>
@@ -580,13 +480,13 @@ function PrintEstimator() {
             <div className="flex gap-[14px] max-[760px]:grid max-[760px]:grid-cols-2 max-[420px]:grid-cols-1">
               <label className="flex flex-1 flex-col gap-2 text-xs font-semibold text-muted-foreground max-[760px]:col-span-full max-[420px]:col-span-1">
                 <span>Printer profile</span>
-                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]" value={profile.id} onChange={() => undefined}>
+                <select className="h-[42px] w-full rounded border border-[#cbd8c3] bg-[#fbfcf8] px-3 text-[#2f3d32] outline-none focus:border-[#5d7052] focus:ring-[3px] focus:ring-[#5d7052]/[.18]" value={profile.id} onChange={() => undefined}>
                   <option value={profile.id}>{profile.name}</option>
                 </select>
               </label>
               <label className="flex flex-1 flex-col gap-2 text-xs font-semibold text-muted-foreground">
                 <span>Quality</span>
-                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
+                <select className="h-[42px] w-full rounded border border-[#cbd8c3] bg-[#fbfcf8] px-3 text-[#2f3d32] outline-none focus:border-[#5d7052] focus:ring-[3px] focus:ring-[#5d7052]/[.18]"
                   value={quality}
                   onChange={(event) => setQuality(event.target.value)}
                 >
@@ -598,8 +498,8 @@ function PrintEstimator() {
             </div>
             <div className="grid grid-cols-3 gap-[14px] max-[760px]:grid-cols-2 max-[420px]:grid-cols-1">
               <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
-                <span>Print type</span>
-                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
+                 <span>Print type</span>
+                 <select className="h-[42px] w-full rounded border border-[#cbd8c3] bg-[#fbfcf8] px-3 text-[#2f3d32] outline-none focus:border-[#5d7052] focus:ring-[3px] focus:ring-[#5d7052]/[.18]"
                   value={printType}
                   onChange={(event) =>
                     setPrintType(event.target.value as MarketService)
@@ -610,8 +510,8 @@ function PrintEstimator() {
                 </select>
               </label>
               <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
-                <span>Paper type</span>
-                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
+                 <span>Paper type</span>
+                 <select className="h-[42px] w-full rounded border border-[#cbd8c3] bg-[#fbfcf8] px-3 text-[#2f3d32] outline-none focus:border-[#5d7052] focus:ring-[3px] focus:ring-[#5d7052]/[.18]"
                   value={paperType}
                   onChange={(event) =>
                     setPaperType(event.target.value as PaperType)
@@ -623,8 +523,8 @@ function PrintEstimator() {
                 </select>
               </label>
               <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
-                <span>Paper size</span>
-                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
+                 <span>Paper size</span>
+                 <select className="h-[42px] w-full rounded border border-[#cbd8c3] bg-[#fbfcf8] px-3 text-[#2f3d32] outline-none focus:border-[#5d7052] focus:ring-[3px] focus:ring-[#5d7052]/[.18]"
                   value={paperSize}
                   onChange={(event) =>
                     setPaperSize(event.target.value as PaperSize)
@@ -657,8 +557,8 @@ function PrintEstimator() {
                 max={pricingBasis === "margin" ? "99.99" : undefined}
               />
               <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
-                <span>Pricing basis</span>
-                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
+                 <span>Pricing basis</span>
+                 <select className="h-[42px] w-full rounded border border-[#cbd8c3] bg-[#fbfcf8] px-3 text-[#2f3d32] outline-none focus:border-[#5d7052] focus:ring-[3px] focus:ring-[#5d7052]/[.18]"
                   value={pricingBasis}
                   onChange={(event) =>
                     setPricingBasis(event.target.value as PrintPricingBasis)
@@ -669,8 +569,8 @@ function PrintEstimator() {
                 </select>
               </label>
               <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
-                <span>Content type</span>
-                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
+                 <span>Content type</span>
+                 <select className="h-[42px] w-full rounded border border-[#cbd8c3] bg-[#fbfcf8] px-3 text-[#2f3d32] outline-none focus:border-[#5d7052] focus:ring-[3px] focus:ring-[#5d7052]/[.18]"
                   value={contentType}
                   onChange={(event) =>
                     setContentType(event.target.value as ContentType)
@@ -682,8 +582,8 @@ function PrintEstimator() {
                 </select>
               </label>
               <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
-                <span>Color mode</span>
-                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
+                 <span>Color mode</span>
+                 <select className="h-[42px] w-full rounded border border-[#cbd8c3] bg-[#fbfcf8] px-3 text-[#2f3d32] outline-none focus:border-[#5d7052] focus:ring-[3px] focus:ring-[#5d7052]/[.18]"
                   value={colorClass}
                   onChange={(event) =>
                     setColorClass(event.target.value as ColorClass)
@@ -740,8 +640,8 @@ function PrintEstimator() {
                 />
               </div>
               <label className="mt-[14px] flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
-                <span>Price rounding</span>
-                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
+                 <span>Price rounding</span>
+                 <select className="h-[42px] w-full rounded border border-[#cbd8c3] bg-[#fbfcf8] px-3 text-[#2f3d32] outline-none focus:border-[#5d7052] focus:ring-[3px] focus:ring-[#5d7052]/[.18]"
                   value={rounding}
                   onChange={(event) =>
                     setRounding(event.target.value as typeof rounding)
@@ -756,13 +656,13 @@ function PrintEstimator() {
             </details>
           </div>
         </section>
-        <aside className="sticky top-5 border border-[#282421] bg-[#282421] p-[26px] text-[#fff8ee] max-[760px]:static max-[760px]:order-[-1]">
+        <aside className="sticky top-5 border border-[#26372b] bg-[#26372b] p-[26px] text-[#f7faf4] max-[760px]:static max-[760px]:order-[-1]">
           {pages.length === 0 || processing || aiBusy ? (
             <div className="flex min-h-[360px] flex-col justify-center">
-              <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#e1a38e]">
+              <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b7c9ab]">
                 {processing || aiBusy ? "Analyzing artwork" : "Your estimate"}
               </div>
-              <div className="mt-11 font-heading text-xs font-bold tracking-[0.12em] text-[#766c64]">01</div>
+              <div className="mt-11 font-heading text-xs font-bold tracking-[0.12em] text-[#80917c]">01</div>
               <h2 className="mt-3 text-[25px] leading-[1.1] tracking-[-0.04em]">
                 {processing
                   ? "Reading File"
@@ -771,7 +671,7 @@ function PrintEstimator() {
                     : "Upload artwork"}
                 {!processing && !aiBusy && <><br />to begin</>}
               </h2>
-              <p className="mt-[14px] max-w-[235px] text-xs leading-[1.6] text-[#aaa099]">
+              <p className="mt-[14px] max-w-[235px] text-xs leading-[1.6] text-[#a9b8a0]">
                 {processing || aiBusy
                   ? "Your production estimate will appear after analysis is complete."
                   : "Once your file is analyzed, your production cost and suggested price will appear here."}
@@ -779,25 +679,25 @@ function PrintEstimator() {
             </div>
           ) : (
             <>
-               <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#e1a38e]">Estimated production cost</div>
+               <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b7c9ab]">Estimated production cost</div>
                <div className="mt-[11px] font-heading text-[40px] font-extrabold tracking-[-0.06em] max-[760px]:text-4xl max-[420px]:text-[32px]">{peso(result.totalCost)}</div>
-               <div className="text-xs text-[#bcb1a8]">
+                <div className="text-xs text-[#afbea9]">
                 {result.pageCount} printed page
                 {result.pageCount === 1 ? "" : "s"}
               </div>
                <div className="my-[27px] grid grid-cols-2 gap-2.5">
-                 <div className="bg-[#3a3531] p-3.5">
-                   <span className="block text-[11px] text-[#bcb1a8]">Cost / print</span>
+                 <div className="bg-[#3c4f40] p-3.5">
+                   <span className="block text-[11px] text-[#afbea9]">Cost / print</span>
                    <strong className="mt-[7px] block text-base">{peso(result.costPerPrint)}</strong>
                 </div>
-                 <div className="bg-[#3a3531] p-3.5">
-                   <span className="block text-[11px] text-[#bcb1a8]">Ink load</span>
+                 <div className="bg-[#3c4f40] p-3.5">
+                   <span className="block text-[11px] text-[#afbea9]">Ink load</span>
                    <strong className="mt-[7px] block text-base">{result.averageInkLoad.toFixed(1)}%</strong>
                 </div>
               </div>
-               <div className="my-5 border border-[#71645b] bg-[#342f2b] p-[15px]">
+                <div className="my-5 border border-[#7f947d] bg-[#34463a] p-[15px]">
                 <div>
-                   <span className="block text-[11px] text-[#bcb1a8]">Market reference</span>
+                    <span className="block text-[11px] text-[#afbea9]">Market reference</span>
                    <strong className="mt-1.5 block font-heading text-[21px]">
                     {result.marketReferenceAvailable &&
                     result.marketReference != null
@@ -807,7 +707,7 @@ function PrintEstimator() {
                 </div>
                 {result.marketReferenceAvailable &&
                   result.marketReference != null && (
-                     <p className="mt-3 border-t border-[#514a44] pt-2.5 text-[11px] leading-[1.5] text-[#cfc4bc]">
+                      <p className="mt-3 border-t border-[#5f745f] pt-2.5 text-[11px] leading-[1.5] text-[#c8d5c5]">
                       {result.suggestedJobPrice >= result.marketReference
                         ? "Suggested price is"
                         : "Suggested price is"}{" "}
@@ -823,7 +723,7 @@ function PrintEstimator() {
                     </p>
                   )}
               </div>
-               <div className="border-y border-[#514a44] py-3">
+                <div className="border-y border-[#5f745f] py-3">
                 <Row label="Ink" value={result.inkCost} />
                 <Row label="Paper" value={result.paperCost} />
                 <Row label="Maintenance" value={result.maintenanceCost} />
@@ -832,15 +732,15 @@ function PrintEstimator() {
                 <Row label="Waste" value={result.wasteCost} />
                 <Row label="Overhead" value={result.overhead} />
               </div>
-                <div className="mt-5 bg-[#bb563a] p-[17px]">
-                  <span className="block text-[11px] text-[#bcb1a8]">Suggested job price</span>
+                 <div className="mt-5 bg-[#5d7052] p-[17px]">
+                   <span className="block text-[11px] text-[#afbea9]">Suggested job price</span>
                   <strong className="mt-[7px] block font-heading text-[27px] tracking-[-0.04em]">{peso(result.suggestedJobPrice)}</strong>
-                 <small className="mt-1.5 block text-[11px] text-[#f4d6cb]">
+                  <small className="mt-1.5 block text-[11px] text-[#d7e6d3]">
                   {peso(result.profit)} profit ·{" "}
                    {result.actualMargin.toFixed(1)}% actual margin
                  </small>
                </div>
-                <p className="mt-5 text-[10px] leading-[1.5] text-[#a99e95]">
+                 <p className="mt-5 text-[10px] leading-[1.5] text-[#9dad9f]">
                 Browser analysis estimates ink from rendered pixels. Actual
                 printer separations may differ.
               </p>
@@ -973,15 +873,15 @@ function Profiles() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route element={<Layout />}>
           <Route path="/print-estimator" element={<PrintEstimator />} />
           <Route path="/cost-estimator" element={<PricingCalculator />} />
           <Route path="/qr-generator" element={<QRDesigner />} />
           <Route path="/profiles" element={<Profiles />} />
-        </Routes>
-      </Layout>
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }

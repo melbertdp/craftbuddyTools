@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/pdf",
     scope: "/",
     display: "standalone",
-    background_color: "#f5f1eb",
-    theme_color: "#bb563a",
+    background_color: "#f3f6ef",
+    theme_color: "#5d7052",
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
     ],

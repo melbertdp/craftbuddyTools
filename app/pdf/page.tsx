@@ -13,7 +13,7 @@ export default function PdfHomePage() {
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="size-4" aria-hidden />
-            CraftBuddy Tools
+            <img className="h-7 w-auto max-w-[160px] object-contain" src="/logo.png" alt="CraftBuddy Tools" />
           </Link>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             <Lock className="size-3" aria-hidden />
