@@ -102,6 +102,11 @@ function Layout({ children }: { children: React.ReactNode }) {
               </NavLink>
             </Button>
           ))}
+          <Button variant="ghost" size="sm" asChild>
+            <a href="/pdf" className="text-muted-foreground">
+              PDF tools
+            </a>
+          </Button>
         </nav>
       </header>
       {children}
@@ -176,6 +181,23 @@ function Home() {
             </p>
             <Button className="mt-auto w-fit px-0" variant="link" asChild>
               <Link to="/qr-generator">Design a QR code ↗</Link>
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="col-span-2 min-h-[200px] border-[#c8b9a9] bg-[#e9e2f0] transition-transform hover:-translate-y-1 hover:shadow-xl max-[760px]:col-span-1">
+          <CardContent className="flex h-full flex-col p-[30px]">
+            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
+              04 / documents
+            </div>
+            <h2 className="mt-8 font-heading text-[31px] font-bold tracking-[-0.055em]">
+              PDF tools
+            </h2>
+            <p className="max-w-[520px] leading-relaxed text-[#665d56]">
+              Edit, sign, merge, split, convert, watermark, and compress PDFs.
+              Every document stays on your device.
+            </p>
+            <Button className="mt-auto w-fit px-0" variant="link" asChild>
+              <a href="/pdf">Open PDF tools ↗</a>
             </Button>
           </CardContent>
         </Card>

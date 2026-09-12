@@ -1,2 +1,15 @@
 node_modules/
 .next/
+
+# Build and test artifacts
+out/
+*.tsbuildinfo
+test-results/
+playwright-report/
+blob-report/
+.vitest/
+
+# Local environment
+.env.local
+.env*.local
+.env*
