@@ -19,6 +19,7 @@ import {
   type PrintProfile,
 } from "./lib/calculator";
 import { PricingCalculator } from "./PricingCalculator";
+import QRDesigner from "./qr/QRDesigner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -87,6 +88,7 @@ function Layout({ children }: { children: React.ReactNode }) {
           {[
             ["/print-estimator", "Print estimator"],
             ["/cost-estimator", "Cost estimator"],
+            ["/qr-generator", "QR generator"],
             ["/profiles", "Profiles"],
           ].map(([to, label]) => (
             <Button key={to} variant="ghost" size="sm" asChild>
@@ -122,7 +124,7 @@ function Home() {
         <span className="text-primary">Price with confidence.</span>
       </h1>
       <p className="mt-6 max-w-[580px] text-lg leading-relaxed text-muted-foreground">
-        Two focused calculators for makers, print shops, and small businesses.
+        Focused tools for makers, print shops, and small businesses.
         No account, no upload queue, no clutter.
       </p>
       <div className="mt-16 grid grid-cols-2 gap-[18px] max-[760px]:mt-10 max-[760px]:grid-cols-1">
@@ -157,6 +159,23 @@ function Home() {
             </p>
             <Button className="mt-auto w-fit px-0" variant="link" asChild>
               <Link to="/cost-estimator">Price a product ↗</Link>
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="min-h-[315px] border-[#c8b9a9] bg-[#e6ded6] transition-transform hover:-translate-y-1 hover:shadow-xl">
+          <CardContent className="flex h-full flex-col p-[30px]">
+            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
+              03 / creative
+            </div>
+            <h2 className="mt-14 font-heading text-[31px] font-bold tracking-[-0.055em]">
+              QR code designer
+            </h2>
+            <p className="max-w-[350px] leading-relaxed text-[#665d56]">
+              Create branded QR codes locally with flexible styling, logo
+              support, and production-ready exports.
+            </p>
+            <Button className="mt-auto w-fit px-0" variant="link" asChild>
+              <Link to="/qr-generator">Design a QR code ↗</Link>
             </Button>
           </CardContent>
         </Card>
@@ -937,6 +956,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/print-estimator" element={<PrintEstimator />} />
           <Route path="/cost-estimator" element={<PricingCalculator />} />
+          <Route path="/qr-generator" element={<QRDesigner />} />
           <Route path="/profiles" element={<Profiles />} />
         </Routes>
       </Layout>

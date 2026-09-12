@@ -64,7 +64,15 @@
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", Georgia, serif;
+  --color-ink: var(--foreground);
+  --color-paper: var(--card);
+  --color-canvas: var(--background);
+  --color-muted: var(--muted-foreground);
+  --color-line: var(--border);
+  --color-rust: var(--primary);
+  --color-rust-dark: var(--primary);
 }
 
 @layer base {
