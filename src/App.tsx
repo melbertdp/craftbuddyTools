@@ -10,16 +10,19 @@ import {
 } from "./lib/analysis";
 import {
   calculatePrintCost,
-  calculatePricing,
   DEFAULT_PROFILE,
   PAPER_SIZES,
   PAPER_TYPES,
-  type CalculationMethod,
   type PrintPricingBasis,
   type PaperSize,
   type PaperType,
   type PrintProfile,
 } from "./lib/calculator";
+import { PricingCalculator } from "./PricingCalculator";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type {
   ColorClass,
   ContentType,
@@ -70,22 +73,37 @@ function loadProfile(): PrintProfile {
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <Link className="brand" to="/">
-          <span className="brand-mark">CB</span>
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-7 py-5 max-[760px]:flex-col max-[760px]:items-start max-[760px]:gap-5">
+        <Link className="flex items-center gap-2.5 font-bold tracking-tight" to="/">
+          <span className="grid size-8 place-items-center rounded-lg bg-foreground text-xs font-bold text-background">
+            CB
+          </span>
           <span>
-            CraftBuddy <em>Tools</em>
+            CraftBuddy <span className="text-primary">Tools</span>
           </span>
         </Link>
-        <nav>
-          <NavLink to="/print-estimator">Print estimator</NavLink>
-          <NavLink to="/cost-estimator">Cost estimator</NavLink>
-          <NavLink to="/profiles">Profiles</NavLink>
+        <nav className="flex items-center gap-1 max-[760px]:flex-wrap">
+          {[
+            ["/print-estimator", "Print estimator"],
+            ["/cost-estimator", "Cost estimator"],
+            ["/profiles", "Profiles"],
+          ].map(([to, label]) => (
+            <Button key={to} variant="ghost" size="sm" asChild>
+              <NavLink
+                to={to}
+                className={({ isActive }) =>
+                  isActive ? "text-foreground" : "text-muted-foreground"
+                }
+              >
+                {label}
+              </NavLink>
+            </Button>
+          ))}
         </nav>
       </header>
       {children}
-      <footer>
+      <footer className="mx-auto w-full max-w-[1240px] px-7 py-8 text-[11px] text-muted-foreground">
         Private by design. Your files are processed in this browser.
       </footer>
     </div>
@@ -94,44 +112,58 @@ function Layout({ children }: { children: React.ReactNode }) {
 
 function Home() {
   return (
-    <main className="home page">
-      <div className="eyebrow">Craft tools for real-world pricing</div>
-      <h1>
+    <main className="mx-auto w-full max-w-[1184px] px-7 py-24 max-[760px]:px-5 max-[760px]:py-16">
+      <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
+        Craft tools for real-world pricing
+      </div>
+      <h1 className="mt-5 font-heading text-[clamp(42px,7vw,76px)] font-extrabold leading-none tracking-[-0.055em]">
         Know your cost.
         <br />
-        <span>Price with confidence.</span>
+        <span className="text-primary">Price with confidence.</span>
       </h1>
-      <p className="lede">
+      <p className="mt-6 max-w-[580px] text-lg leading-relaxed text-muted-foreground">
         Two focused calculators for makers, print shops, and small businesses.
         No account, no upload queue, no clutter.
       </p>
-      <div className="tool-grid">
-        <Link className="tool-card print-card" to="/print-estimator">
-          <div className="card-kicker">01 / production</div>
-          <h2>Print cost estimator</h2>
-          <p>
+      <div className="mt-16 grid grid-cols-2 gap-[18px] max-[760px]:mt-10 max-[760px]:grid-cols-1">
+        <Card className="min-h-[315px] border-[#c8b9a9] bg-[#ead9c4] transition-transform hover:-translate-y-1 hover:shadow-xl">
+          <CardContent className="flex h-full flex-col p-[30px]">
+            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
+              01 / production
+            </div>
+            <h2 className="mt-14 font-heading text-[31px] font-bold tracking-[-0.055em]">
+              Print cost estimator
+            </h2>
+            <p className="max-w-[350px] leading-relaxed text-[#665d56]">
             Read a design, account for paper and ink, then set a price that
             protects your margin.
-          </p>
-          <span className="card-link">
-            Estimate a print job <b>↗</b>
-          </span>
-        </Link>
-        <Link className="tool-card cost-card" to="/cost-estimator">
-          <div className="card-kicker">02 / product</div>
-          <h2>Product cost estimator</h2>
-          <p>
+            </p>
+            <Button className="mt-auto w-fit px-0" variant="link" asChild>
+              <Link to="/print-estimator">Estimate a print job ↗</Link>
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="min-h-[315px] border-[#c8b9a9] bg-[#dbe3dc] transition-transform hover:-translate-y-1 hover:shadow-xl">
+          <CardContent className="flex h-full flex-col p-[30px]">
+            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
+              02 / product
+            </div>
+            <h2 className="mt-14 font-heading text-[31px] font-bold tracking-[-0.055em]">
+              Product cost estimator
+            </h2>
+            <p className="max-w-[350px] leading-relaxed text-[#665d56]">
             Build a cost base from materials, labor, and overhead with simple
             manual inputs.
-          </p>
-          <span className="card-link">
-            Price a product <b>↗</b>
-          </span>
-        </Link>
+            </p>
+            <Button className="mt-auto w-fit px-0" variant="link" asChild>
+              <Link to="/cost-estimator">Price a product ↗</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
-      <div className="privacy-note">
-        <strong>Local processing</strong>
-        <span>
+      <div className="mt-8 flex gap-5 text-xs text-muted-foreground max-[760px]:block">
+        <strong className="text-foreground">Local processing</strong>
+        <span className="max-[760px]:mt-2 max-[760px]:block">
           Images and PDFs never leave this browser. Reusable profiles stay on
           this device.
         </span>
@@ -158,11 +190,12 @@ function Field({
   max?: string;
 }) {
   return (
-    <label className="field">
+    <Label className="flex flex-col items-stretch gap-2 text-xs font-semibold text-muted-foreground">
       <span>{label}</span>
-      <div className="input-wrap">
-        {prefix && <i>{prefix}</i>}
-        <input
+      <div className="relative">
+        {prefix && <i className="absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-xs not-italic text-muted-foreground">{prefix}</i>}
+        <Input
+          className={`h-[42px] rounded border-[#ded6cd] bg-[#fffdf9] text-[#282421] outline-none focus-visible:border-[#bb563a] focus-visible:ring-[3px] focus-visible:ring-[#bb563a]/[.11] ${prefix ? "pl-[34px]" : ""} ${suffix ? "pr-[35px]" : ""}`}
           type="number"
           min="0"
           max={max}
@@ -170,9 +203,9 @@ function Field({
           value={value}
           onChange={(event) => onChange(event.target.value)}
         />
-        {suffix && <i>{suffix}</i>}
+        {suffix && <i className="absolute right-3 top-1/2 z-[1] -translate-y-1/2 text-xs not-italic text-muted-foreground">{suffix}</i>}
       </div>
-    </label>
+    </Label>
   );
 }
 
@@ -365,35 +398,35 @@ function PrintEstimator() {
     window.localStorage.setItem("cb-profile", JSON.stringify(next));
   }
   return (
-    <main className="page estimator">
-      <div className="page-heading">
+    <main className="mx-auto w-full max-w-[1184px] px-7 py-[62px] pb-[100px] max-[760px]:px-5 max-[760px]:py-12 max-[760px]:pb-[70px]">
+      <div className="mb-[38px] flex items-end justify-between max-[760px]:block">
         <div>
-          <div className="eyebrow">Production / print job</div>
-          <h1>Print cost estimator</h1>
-          <p>Analyze artwork locally, then build a defensible selling price.</p>
+          <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Production / print job</div>
+          <h1 className="mt-2 font-heading text-[45px] font-extrabold leading-[1.02] tracking-[-0.055em] max-[760px]:text-[37px]">Print cost estimator</h1>
+          <p className="mt-2 text-muted-foreground">Analyze artwork locally, then build a defensible selling price.</p>
         </div>
-        <Link className="quiet-link" to="/profiles">
+        <Link className="text-[13px] text-muted-foreground no-underline max-[760px]:mt-5 max-[760px]:inline-block" to="/profiles">
           Manage profiles ↗
         </Link>
       </div>
-      <div className="workspace">
-        <section className="form-stack">
-          <div className="panel upload-panel">
-            <div className="panel-title">
-              <div>
-                <span className="step">01</span>
-                <h2>Your artwork</h2>
+      <div className="grid grid-cols-[minmax(0,1fr)_350px] items-start gap-[22px] max-[760px]:grid-cols-1">
+        <section className="flex flex-col gap-[14px]">
+          <div className="border border-[#ded6cd] bg-[#fffdf9] p-6 max-[760px]:p-[18px]">
+            <div className="mb-[22px] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="font-heading text-[11px] font-bold text-primary">01</span>
+                <h2 className="font-heading text-xl tracking-[-0.04em]">Your artwork</h2>
               </div>
               {processing && (
-                <span className="processing">
+                <span className="text-xs text-primary">
                   Analyzing {Math.round(progress)}%
                 </span>
               )}
             </div>
-            <label className="ai-toggle">
-              <span>
+            <label className="my-[18px] mb-1 flex items-center justify-between gap-4 border border-[#ded6cd] bg-[#fbf6ed] px-3.5 py-3">
+              <span className="flex flex-col gap-[3px]">
                 <strong>AI Assist</strong>
-                <small>
+                <small className="text-[11px] text-muted-foreground">
                   {aiAssistEnabled
                     ? "Analyze file also identifies the document"
                     : "Manual file analysis only"}
@@ -411,19 +444,19 @@ function PrintEstimator() {
               />
             </label>
             <button
-              className="dropzone"
+              className="flex min-h-[135px] w-full flex-col items-center justify-center gap-2 border border-dashed border-[#c8b9a9] bg-[#fbf6ed] text-[#282421] disabled:opacity-75"
               onClick={() => inputRef.current?.click()}
               disabled={processing}
             >
               <strong>{fileName || "Drop a PDF or image here"}</strong>
-              <span>
+                <span className="text-xs text-muted-foreground">
                 {processing
                   ? "Reading every page locally…"
                   : "JPG, PNG, WEBP, or PDF · up to 20 PDF pages"}
               </span>
               {processing && (
-                <span className="progress">
-                  <b style={{ width: `${progress}%` }} />
+                  <span className="mt-2 h-1 w-[70%] bg-[#e4d9cb]">
+                   <b className="block h-full bg-[#bb563a] transition-[width] duration-200" style={{ width: `${progress}%` }} />
                 </span>
               )}
             </button>
@@ -434,13 +467,13 @@ function PrintEstimator() {
               accept="image/*,.pdf,application/pdf"
               onChange={(event) => handleFile(event.target.files?.[0])}
             />
-            {error && <div className="error">{error}</div>}
+            {error && <div className="mt-[14px] bg-[#f8e4df] p-[11px] text-xs text-[#9b3e2f]">{error}</div>}
             {artworkFile && pages.length === 0 && !processing && (
-              <div className="file-status">
-                <span className="status-dot" />
+              <div className="mt-[14px] flex items-center gap-2 text-xs text-[#557463]">
+                <span className="size-[7px] shrink-0 rounded-full bg-[#557463]" />
                 {fileName} is ready to analyze
                 <button
-                  className="ai-button"
+                  className="ml-0 border border-[#bb563a] bg-[#bb563a] px-3 py-2 text-xs font-bold text-[#fff8ee] hover:bg-[#8f382c] disabled:cursor-not-allowed disabled:opacity-55"
                   onClick={analyzeArtwork}
                   disabled={aiAssistEnabled && aiCooldown > 0}
                 >
@@ -448,7 +481,7 @@ function PrintEstimator() {
                     ? `Analyze file (${aiCooldown}s)`
                     : "Analyze file"}
                 </button>
-                <button
+                <button className="ml-auto border-0 bg-transparent text-xs text-muted-foreground underline"
                   onClick={() => {
                     setFileName("");
                     setArtworkFile(undefined);
@@ -459,13 +492,13 @@ function PrintEstimator() {
               </div>
             )}
             {pages.length > 0 && (
-              <div className="file-status">
-                <span className="status-dot" />
+              <div className="mt-[14px] flex items-center gap-2 text-xs text-[#557463]">
+                <span className="size-[7px] shrink-0 rounded-full bg-[#557463]" />
                 {pages.length} page{pages.length === 1 ? "" : "s"} analyzed ·
                 rendered ink-load estimate{" "}
                 {aiAssistEnabled && (
                   <button
-                    className="ai-button"
+                    className="ml-0 border border-[#bb563a] bg-[#bb563a] px-3 py-2 text-xs font-bold text-[#fff8ee] hover:bg-[#8f382c] disabled:cursor-not-allowed disabled:opacity-55"
                     onClick={runAiAssist}
                     disabled={
                       aiBusy ||
@@ -480,7 +513,7 @@ function PrintEstimator() {
                         : "Identify with AI"}
                   </button>
                 )}
-                <button
+                <button className="ml-auto border-0 bg-transparent text-xs text-muted-foreground underline"
                   onClick={() => {
                     setPages([]);
                     setFileName("");
@@ -493,26 +526,26 @@ function PrintEstimator() {
               </div>
             )}
             {aiAssistEnabled && aiResult && (
-              <div className="ai-result">{aiResult}</div>
+              <div className="mt-[14px] bg-[#fbf6ed] p-3 text-[13px] leading-[1.5] text-[#282421]">{aiResult}</div>
             )}
           </div>
-          <div className="panel">
-            <div className="panel-title">
-              <div>
-                <span className="step">02</span>
-                <h2>Print settings</h2>
+          <div className="border border-[#ded6cd] bg-[#fffdf9] p-6 max-[760px]:p-[18px]">
+            <div className="mb-[22px] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="font-heading text-[11px] font-bold text-primary">02</span>
+                <h2 className="font-heading text-xl tracking-[-0.04em]">Print settings</h2>
               </div>
             </div>
-            <div className="profile-row">
-              <label className="field wide">
+            <div className="flex gap-[14px] max-[760px]:grid max-[760px]:grid-cols-2 max-[420px]:grid-cols-1">
+              <label className="flex flex-1 flex-col gap-2 text-xs font-semibold text-muted-foreground max-[760px]:col-span-full max-[420px]:col-span-1">
                 <span>Printer profile</span>
-                <select value={profile.id} onChange={() => undefined}>
+                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]" value={profile.id} onChange={() => undefined}>
                   <option value={profile.id}>{profile.name}</option>
                 </select>
               </label>
-              <label className="field">
+              <label className="flex flex-1 flex-col gap-2 text-xs font-semibold text-muted-foreground">
                 <span>Quality</span>
-                <select
+                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
                   value={quality}
                   onChange={(event) => setQuality(event.target.value)}
                 >
@@ -522,10 +555,10 @@ function PrintEstimator() {
                 </select>
               </label>
             </div>
-            <div className="field-grid">
-              <label className="field">
+            <div className="grid grid-cols-3 gap-[14px] max-[760px]:grid-cols-2 max-[420px]:grid-cols-1">
+              <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
                 <span>Print type</span>
-                <select
+                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
                   value={printType}
                   onChange={(event) =>
                     setPrintType(event.target.value as MarketService)
@@ -535,9 +568,9 @@ function PrintEstimator() {
                   <option value="photo_print">Photo</option>
                 </select>
               </label>
-              <label className="field">
+              <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
                 <span>Paper type</span>
-                <select
+                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
                   value={paperType}
                   onChange={(event) =>
                     setPaperType(event.target.value as PaperType)
@@ -548,9 +581,9 @@ function PrintEstimator() {
                   ))}
                 </select>
               </label>
-              <label className="field">
+              <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
                 <span>Paper size</span>
-                <select
+                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
                   value={paperSize}
                   onChange={(event) =>
                     setPaperSize(event.target.value as PaperSize)
@@ -582,9 +615,9 @@ function PrintEstimator() {
                 suffix="%"
                 max={pricingBasis === "margin" ? "99.99" : undefined}
               />
-              <label className="field">
+              <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
                 <span>Pricing basis</span>
-                <select
+                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
                   value={pricingBasis}
                   onChange={(event) =>
                     setPricingBasis(event.target.value as PrintPricingBasis)
@@ -594,9 +627,9 @@ function PrintEstimator() {
                   <option value="margin">Margin on selling price</option>
                 </select>
               </label>
-              <label className="field">
+              <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
                 <span>Content type</span>
-                <select
+                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
                   value={contentType}
                   onChange={(event) =>
                     setContentType(event.target.value as ContentType)
@@ -607,9 +640,9 @@ function PrintEstimator() {
                   <option value="text_with_image">Text with image</option>
                 </select>
               </label>
-              <label className="field">
+              <label className="flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
                 <span>Color mode</span>
-                <select
+                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
                   value={colorClass}
                   onChange={(event) =>
                     setColorClass(event.target.value as ColorClass)
@@ -621,13 +654,13 @@ function PrintEstimator() {
                 </select>
               </label>
             </div>
-            <p className="setting-note">
+            <p className="mt-[14px] text-[11px] leading-[1.5] text-muted-foreground">
               {paperType} · {PAPER_SIZES[paperSize].label}. Paper dimensions are
               calculated from the selected size.
             </p>
             <details>
               <summary>Operating costs & pricing</summary>
-              <div className="field-grid">
+              <div className="grid grid-cols-3 gap-[14px] max-[760px]:grid-cols-2 max-[420px]:grid-cols-1">
                 <Field
                   label="Maintenance / page"
                   value={maintenance}
@@ -665,9 +698,9 @@ function PrintEstimator() {
                   prefix="₱"
                 />
               </div>
-              <label className="field">
+              <label className="mt-[14px] flex flex-col gap-2 text-xs font-semibold text-muted-foreground">
                 <span>Price rounding</span>
-                <select
+                <select className="h-[42px] w-full rounded border border-[#ded6cd] bg-[#fffdf9] px-3 text-[#282421] outline-none focus:border-[#bb563a] focus:ring-[3px] focus:ring-[#bb563a]/[.11]"
                   value={rounding}
                   onChange={(event) =>
                     setRounding(event.target.value as typeof rounding)
@@ -682,14 +715,14 @@ function PrintEstimator() {
             </details>
           </div>
         </section>
-        <aside className="result-panel">
+        <aside className="sticky top-5 border border-[#282421] bg-[#282421] p-[26px] text-[#fff8ee] max-[760px]:static max-[760px]:order-[-1]">
           {pages.length === 0 || processing || aiBusy ? (
-            <div className="result-empty">
-              <div className="result-label">
+            <div className="flex min-h-[360px] flex-col justify-center">
+              <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#e1a38e]">
                 {processing || aiBusy ? "Analyzing artwork" : "Your estimate"}
               </div>
-              <div className="empty-mark">01</div>
-              <h2>
+              <div className="mt-11 font-heading text-xs font-bold tracking-[0.12em] text-[#766c64]">01</div>
+              <h2 className="mt-3 text-[25px] leading-[1.1] tracking-[-0.04em]">
                 {processing
                   ? "Reading File"
                   : aiBusy
@@ -697,7 +730,7 @@ function PrintEstimator() {
                     : "Upload artwork"}
                 {!processing && !aiBusy && <><br />to begin</>}
               </h2>
-              <p>
+              <p className="mt-[14px] max-w-[235px] text-xs leading-[1.6] text-[#aaa099]">
                 {processing || aiBusy
                   ? "Your production estimate will appear after analysis is complete."
                   : "Once your file is analyzed, your production cost and suggested price will appear here."}
@@ -705,26 +738,26 @@ function PrintEstimator() {
             </div>
           ) : (
             <>
-              <div className="result-label">Estimated production cost</div>
-              <div className="result-total">{peso(result.totalCost)}</div>
-              <div className="result-sub">
+               <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#e1a38e]">Estimated production cost</div>
+               <div className="mt-[11px] font-heading text-[40px] font-extrabold tracking-[-0.06em] max-[760px]:text-4xl max-[420px]:text-[32px]">{peso(result.totalCost)}</div>
+               <div className="text-xs text-[#bcb1a8]">
                 {result.pageCount} printed page
                 {result.pageCount === 1 ? "" : "s"}
               </div>
-              <div className="metric-row">
-                <div>
-                  <span>Cost / print</span>
-                  <strong>{peso(result.costPerPrint)}</strong>
+               <div className="my-[27px] grid grid-cols-2 gap-2.5">
+                 <div className="bg-[#3a3531] p-3.5">
+                   <span className="block text-[11px] text-[#bcb1a8]">Cost / print</span>
+                   <strong className="mt-[7px] block text-base">{peso(result.costPerPrint)}</strong>
                 </div>
-                <div>
-                  <span>Ink load</span>
-                  <strong>{result.averageInkLoad.toFixed(1)}%</strong>
+                 <div className="bg-[#3a3531] p-3.5">
+                   <span className="block text-[11px] text-[#bcb1a8]">Ink load</span>
+                   <strong className="mt-[7px] block text-base">{result.averageInkLoad.toFixed(1)}%</strong>
                 </div>
               </div>
-              <div className="market-card">
+               <div className="my-5 border border-[#71645b] bg-[#342f2b] p-[15px]">
                 <div>
-                  <span>Market reference</span>
-                  <strong>
+                   <span className="block text-[11px] text-[#bcb1a8]">Market reference</span>
+                   <strong className="mt-1.5 block font-heading text-[21px]">
                     {result.marketReferenceAvailable &&
                     result.marketReference != null
                       ? peso(result.marketReference)
@@ -733,7 +766,7 @@ function PrintEstimator() {
                 </div>
                 {result.marketReferenceAvailable &&
                   result.marketReference != null && (
-                    <p>
+                     <p className="mt-3 border-t border-[#514a44] pt-2.5 text-[11px] leading-[1.5] text-[#cfc4bc]">
                       {result.suggestedJobPrice >= result.marketReference
                         ? "Suggested price is"
                         : "Suggested price is"}{" "}
@@ -749,7 +782,7 @@ function PrintEstimator() {
                     </p>
                   )}
               </div>
-              <div className="breakdown">
+               <div className="border-y border-[#514a44] py-3">
                 <Row label="Ink" value={result.inkCost} />
                 <Row label="Paper" value={result.paperCost} />
                 <Row label="Maintenance" value={result.maintenanceCost} />
@@ -758,15 +791,15 @@ function PrintEstimator() {
                 <Row label="Waste" value={result.wasteCost} />
                 <Row label="Overhead" value={result.overhead} />
               </div>
-               <div className="suggestion">
-                 <span>Suggested job price</span>
-                 <strong>{peso(result.suggestedJobPrice)}</strong>
-                <small>
+                <div className="mt-5 bg-[#bb563a] p-[17px]">
+                  <span className="block text-[11px] text-[#bcb1a8]">Suggested job price</span>
+                  <strong className="mt-[7px] block font-heading text-[27px] tracking-[-0.04em]">{peso(result.suggestedJobPrice)}</strong>
+                 <small className="mt-1.5 block text-[11px] text-[#f4d6cb]">
                   {peso(result.profit)} profit ·{" "}
                    {result.actualMargin.toFixed(1)}% actual margin
                  </small>
                </div>
-               <p className="disclaimer">
+                <p className="mt-5 text-[10px] leading-[1.5] text-[#a99e95]">
                 Browser analysis estimates ink from rendered pixels. Actual
                 printer separations may differ.
               </p>
@@ -780,652 +813,10 @@ function PrintEstimator() {
 
 function Row({ label, value }: { label: string; value: number }) {
   return (
-    <div>
+    <div className="flex justify-between py-[7px] text-xs">
       <span>{label}</span>
-      <b>{peso(value)}</b>
+      <b className="font-medium">{peso(value)}</b>
     </div>
-  );
-}
-
-const MATERIAL_COLOR = "#557463";
-const LABOUR_COLOR = "#bb563a";
-const OTHER_COLOR = "#c08a4a";
-const MAX_MATERIAL_ROWS = 12;
-const MAX_LABOUR_ROWS = 5;
-const MAX_OTHER_ROWS = 5;
-
-type MaterialRow = {
-  id: number;
-  name: string;
-  quantity: number;
-  unitCost: number;
-};
-type LabourRow = {
-  id: number;
-  description: string;
-  minutes: number;
-  ratePerHour: number;
-};
-type OtherRow = {
-  id: number;
-  label: string;
-  quantity: number;
-  cost: number;
-};
-
-let costCellId = 0;
-const nextCostCellId = () => ++costCellId;
-
-const blankMaterials = (): MaterialRow[] => [
-  { id: nextCostCellId(), name: "", quantity: 1, unitCost: 0 },
-];
-const blankLabour = (): LabourRow[] => [
-  { id: nextCostCellId(), description: "", minutes: 0, ratePerHour: 0 },
-];
-const blankOther = (): OtherRow[] => [
-  { id: nextCostCellId(), label: "", quantity: 1, cost: 0 },
-];
-
-function CostEstimator() {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [method, setMethod] = useState<CalculationMethod>("margin");
-  const [margin, setMargin] = useState("30");
-  const [amount, setAmount] = useState("0");
-  const [price, setPrice] = useState("0");
-  const [discount, setDiscount] = useState("0");
-  const [tax, setTax] = useState("0");
-  const [materials, setMaterials] = useState<MaterialRow[]>(blankMaterials);
-  const [labourRows, setLabourRows] = useState<LabourRow[]>(blankLabour);
-  const [otherRows, setOtherRows] = useState<OtherRow[]>(blankOther);
-
-  const materialTotal = materials.reduce(
-    (sum, row) => sum + row.quantity * row.unitCost,
-    0,
-  );
-  const labourTotal = labourRows.reduce(
-    (sum, row) => sum + (row.minutes / 60) * row.ratePerHour,
-    0,
-  );
-  const otherTotal = otherRows.reduce(
-    (sum, row) => sum + row.quantity * row.cost,
-    0,
-  );
-  const total = materialTotal + labourTotal + otherTotal;
-
-  const result = calculatePricing({
-    totalCostBase: total,
-    method,
-    margin: numberValue(margin),
-    amount: numberValue(amount),
-    price: numberValue(price),
-    discount: numberValue(discount),
-    tax: numberValue(tax),
-  });
-
-  function reset() {
-    setName("");
-    setDescription("");
-    setMethod("margin");
-    setMargin("30");
-    setAmount("0");
-    setPrice("0");
-    setDiscount("0");
-    setTax("0");
-    setMaterials(blankMaterials());
-    setLabourRows(blankLabour());
-    setOtherRows(blankOther());
-  }
-
-  const updateMaterial = (id: number, patch: Partial<MaterialRow>) =>
-    setMaterials((rows) =>
-      rows.map((row) => (row.id === id ? { ...row, ...patch } : row)),
-    );
-  const addMaterial = () =>
-    setMaterials((rows) => [
-      ...rows,
-      { id: nextCostCellId(), name: "", quantity: 1, unitCost: 0 },
-    ]);
-  const removeMaterial = (id: number) =>
-    setMaterials((rows) => rows.filter((row) => row.id !== id));
-
-  const updateLabour = (id: number, patch: Partial<LabourRow>) =>
-    setLabourRows((rows) =>
-      rows.map((row) => (row.id === id ? { ...row, ...patch } : row)),
-    );
-  const addLabour = () =>
-    setLabourRows((rows) => [
-      ...rows,
-      { id: nextCostCellId(), description: "", minutes: 0, ratePerHour: 0 },
-    ]);
-  const removeLabour = (id: number) =>
-    setLabourRows((rows) => rows.filter((row) => row.id !== id));
-
-  const updateOther = (id: number, patch: Partial<OtherRow>) =>
-    setOtherRows((rows) =>
-      rows.map((row) => (row.id === id ? { ...row, ...patch } : row)),
-    );
-  const addOther = () =>
-    setOtherRows((rows) => [
-      ...rows,
-      { id: nextCostCellId(), label: "", quantity: 1, cost: 0 },
-    ]);
-  const removeOther = (id: number) =>
-    setOtherRows((rows) => rows.filter((row) => row.id !== id));
-
-  return (
-    <main className="page estimator cost-estimator">
-      <div className="page-heading">
-        <div>
-          <div className="eyebrow">Product / manual inputs</div>
-          <h1>Product cost estimator</h1>
-          <p>
-            Build the real cost of a product from materials, labor, and
-            overhead — no inventory system required.
-          </p>
-        </div>
-        <button className="quiet-link" onClick={reset}>
-          Start over ↻
-        </button>
-      </div>
-      <div className="workspace">
-        <section className="form-stack">
-          <div className="panel">
-            <div className="panel-title">
-              <div>
-                <span className="step">01</span>
-                <h2>Product</h2>
-              </div>
-              <strong className="section-subtotal">
-                {name || "Unnamed product"}
-              </strong>
-            </div>
-            <label className="field">
-              <span>Product name</span>
-              <input
-                value={name}
-                placeholder="e.g. Wedding invitation set"
-                onChange={(event) => setName(event.target.value)}
-              />
-            </label>
-            <label className="field field-gap">
-              <span>Description</span>
-              <input
-                value={description}
-                placeholder="Optional notes about this product"
-                onChange={(event) => setDescription(event.target.value)}
-              />
-            </label>
-          </div>
-
-          <div className="panel cost-group">
-            <SectionHead
-              step="02"
-              title="Materials"
-              hint="What goes into the product"
-              accent="materials"
-              count={materials.length}
-              total={materialTotal}
-            />
-            {materials.length > 0 && (
-              <div className="calc-lines">
-                <div className="calc-col-head">
-                  <span>Material</span>
-                  <span>Qty</span>
-                  <span>Unit cost</span>
-                  <span className="align-right">Total</span>
-                  <span />
-                </div>
-                {materials.map((row) => (
-                  <div className="calc-line" key={row.id}>
-                    <input
-                      placeholder="Material name"
-                      value={row.name}
-                      onChange={(event) =>
-                        updateMaterial(row.id, { name: event.target.value })
-                      }
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={row.quantity === 0 ? "" : row.quantity}
-                      onWheel={(event) => event.currentTarget.blur()}
-                      onChange={(event) =>
-                        updateMaterial(row.id, {
-                          quantity: numberValue(event.target.value),
-                        })
-                      }
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={row.unitCost === 0 ? "" : row.unitCost}
-                      onWheel={(event) => event.currentTarget.blur()}
-                      onChange={(event) =>
-                        updateMaterial(row.id, {
-                          unitCost: numberValue(event.target.value),
-                        })
-                      }
-                    />
-                    <span className="line-total">
-                      {peso(row.quantity * row.unitCost)}
-                    </span>
-                    <button
-                      className="row-remove"
-                      aria-label="Remove material"
-                      onClick={() => removeMaterial(row.id)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button
-              className="calc-add"
-              disabled={materials.length >= MAX_MATERIAL_ROWS}
-              onClick={addMaterial}
-            >
-              + Add material
-            </button>
-          </div>
-
-          <div className="panel cost-group">
-            <SectionHead
-              step="03"
-              title="Labor"
-              hint="Time × hourly rate"
-              accent="labour"
-              count={labourRows.length}
-              total={labourTotal}
-            />
-            {labourRows.length > 0 && (
-              <div className="calc-lines">
-                <div className="calc-col-head">
-                  <span>Task</span>
-                  <span>Minutes</span>
-                  <span>Rate / hr</span>
-                  <span className="align-right">Cost</span>
-                  <span />
-                </div>
-                {labourRows.map((row) => (
-                  <div className="calc-line" key={row.id}>
-                    <input
-                      placeholder="Task description"
-                      value={row.description}
-                      onChange={(event) =>
-                        updateLabour(row.id, {
-                          description: event.target.value,
-                        })
-                      }
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={row.minutes === 0 ? "" : row.minutes}
-                      onWheel={(event) => event.currentTarget.blur()}
-                      onChange={(event) =>
-                        updateLabour(row.id, {
-                          minutes: numberValue(event.target.value),
-                        })
-                      }
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={row.ratePerHour === 0 ? "" : row.ratePerHour}
-                      onWheel={(event) => event.currentTarget.blur()}
-                      onChange={(event) =>
-                        updateLabour(row.id, {
-                          ratePerHour: numberValue(event.target.value),
-                        })
-                      }
-                    />
-                    <span className="line-total">
-                      {peso((row.minutes / 60) * row.ratePerHour)}
-                    </span>
-                    <button
-                      className="row-remove"
-                      aria-label="Remove labor row"
-                      onClick={() => removeLabour(row.id)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button
-              className="calc-add"
-              disabled={labourRows.length >= MAX_LABOUR_ROWS}
-              onClick={addLabour}
-            >
-              + Add labor
-            </button>
-          </div>
-
-          <div className="panel cost-group">
-            <SectionHead
-              step="04"
-              title="Other costs"
-              hint="Packaging, fees, and extras"
-              accent="other"
-              count={otherRows.length}
-              total={otherTotal}
-            />
-            {otherRows.length > 0 && (
-              <div className="calc-lines">
-                <div className="calc-col-head">
-                  <span>Type</span>
-                  <span>Qty</span>
-                  <span>Cost</span>
-                  <span className="align-right">Total</span>
-                  <span />
-                </div>
-                {otherRows.map((row) => (
-                  <div className="calc-line" key={row.id}>
-                    <input
-                      placeholder="e.g. Packaging"
-                      value={row.label}
-                      onChange={(event) =>
-                        updateOther(row.id, { label: event.target.value })
-                      }
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={row.quantity === 0 ? "" : row.quantity}
-                      onWheel={(event) => event.currentTarget.blur()}
-                      onChange={(event) =>
-                        updateOther(row.id, {
-                          quantity: numberValue(event.target.value),
-                        })
-                      }
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={row.cost === 0 ? "" : row.cost}
-                      onWheel={(event) => event.currentTarget.blur()}
-                      onChange={(event) =>
-                        updateOther(row.id, {
-                          cost: numberValue(event.target.value),
-                        })
-                      }
-                    />
-                    <span className="line-total">
-                      {peso(row.quantity * row.cost)}
-                    </span>
-                    <button
-                      className="row-remove"
-                      aria-label="Remove other cost"
-                      onClick={() => removeOther(row.id)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button
-              className="calc-add"
-              disabled={otherRows.length >= MAX_OTHER_ROWS}
-              onClick={addOther}
-            >
-              + Add other cost
-            </button>
-          </div>
-
-          <div className="kpi-grid">
-            <div className="kpi-tile materials">
-              <span>Material costs</span>
-              <strong>{peso(materialTotal)}</strong>
-            </div>
-            <div className="kpi-tile labour">
-              <span>Labor costs</span>
-              <strong>{peso(labourTotal)}</strong>
-            </div>
-            <div className="kpi-tile other">
-              <span>Other costs</span>
-              <strong>{peso(otherTotal)}</strong>
-            </div>
-            <div className="kpi-tile total">
-              <span>Total cost base</span>
-              <strong>{peso(total)}</strong>
-            </div>
-          </div>
-
-          <div className="panel">
-            <div className="panel-title">
-              <div>
-                <span className="step">05</span>
-                <h2>Pricing rule</h2>
-              </div>
-            </div>
-            <div className="segmented">
-              {(["margin", "amount", "price"] as CalculationMethod[]).map(
-                (item) => (
-                  <button
-                    className={method === item ? "active" : ""}
-                    key={item}
-                    onClick={() => setMethod(item)}
-                  >
-                    {item === "margin"
-                      ? "Margin %"
-                      : item === "amount"
-                        ? "Profit amount"
-                        : "Selling price"}
-                  </button>
-                ),
-              )}
-            </div>
-            <div className="field-grid">
-              <Field
-                label={
-                  method === "margin"
-                    ? "Target margin"
-                    : method === "amount"
-                      ? "Profit amount"
-                      : "Selling price"
-                }
-                value={
-                  method === "margin"
-                    ? margin
-                    : method === "amount"
-                      ? amount
-                      : price
-                }
-                onChange={
-                  method === "margin"
-                    ? setMargin
-                    : method === "amount"
-                      ? setAmount
-                      : setPrice
-                }
-                prefix={method === "margin" ? undefined : "₱"}
-                suffix={method === "margin" ? "%" : undefined}
-              />
-              <Field
-                label="Discount"
-                value={discount}
-                onChange={setDiscount}
-                suffix="%"
-              />
-              <Field
-                label="Sales tax"
-                value={tax}
-                onChange={setTax}
-                suffix="%"
-              />
-            </div>
-          </div>
-
-          <div className="panel">
-            <div className="panel-title">
-              <div>
-                <span className="step">06</span>
-                <h2>Price breakdown</h2>
-              </div>
-            </div>
-            <div className="donut-wrap">
-              <CostDonut
-                segments={[
-                  {
-                    label: "Materials",
-                    value: materialTotal,
-                    color: MATERIAL_COLOR,
-                  },
-                  {
-                    label: "Labor",
-                    value: labourTotal,
-                    color: LABOUR_COLOR,
-                  },
-                  { label: "Other", value: otherTotal, color: OTHER_COLOR },
-                ]}
-              />
-              <div className="donut-legend">
-                <div>
-                  <i style={{ background: MATERIAL_COLOR }} />
-                  <span>Materials</span>
-                  <b>{peso(materialTotal)}</b>
-                </div>
-                <div>
-                  <i style={{ background: LABOUR_COLOR }} />
-                  <span>Labor</span>
-                  <b>{peso(labourTotal)}</b>
-                </div>
-                <div>
-                  <i style={{ background: OTHER_COLOR }} />
-                  <span>Other costs</span>
-                  <b>{peso(otherTotal)}</b>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-           <aside className="result-panel cost-result">
-          <div className="result-label">Total cost base</div>
-          <div className="result-total">{peso(total)}</div>
-          <div className="result-sub">{name || "Unnamed product"}</div>
-          {description && <div className="result-sub">{description}</div>}
-          <div className="breakdown">
-            <Row label="Materials" value={materialTotal} />
-            <Row label="Labor" value={labourTotal} />
-            <Row label="Other costs" value={otherTotal} />
-          </div>
-          <div className="suggestion">
-            <span>Final customer price</span>
-            <strong>{peso(result.finalPrice)}</strong>
-            <small>
-              {peso(result.profit)} profit · {result.actualMargin.toFixed(1)}%
-              actual margin
-            </small>
-          </div>
-          <div className="breakdown">
-            <Row label="Listing price" value={result.listingPrice} />
-            <Row label="Discount" value={-result.discountAmount} />
-            <Row label="Sales tax" value={result.salesTax} />
-          </div>
-        </aside>
-      </div>
-    </main>
-  );
-}
-
-function SectionHead({
-  step,
-  title,
-  hint,
-  accent,
-  count,
-  total,
-}: {
-  step: string;
-  title: string;
-  hint: string;
-  accent: string;
-  count: number;
-  total: number;
-}) {
-  return (
-    <div className="section-head">
-      <div className="section-title">
-        <span className="step">{step}</span>
-        <div>
-          <h2>{title}</h2>
-          <span className="section-sub">{hint}</span>
-        </div>
-      </div>
-      <div className="section-title">
-        <span className="count-badge">{count}</span>
-        <strong className={`section-subtotal accent-${accent}`}>
-          {peso(total)}
-        </strong>
-      </div>
-    </div>
-  );
-}
-
-function CostDonut({
-  segments,
-}: {
-  segments: { label: string; value: number; color: string }[];
-}) {
-  const total = segments.reduce(
-    (sum, segment) => sum + Math.max(0, segment.value),
-    0,
-  );
-  const radius = 54;
-  const circumference = 2 * Math.PI * radius;
-  let offset = 0;
-  return (
-    <svg
-      className="donut"
-      viewBox="0 0 150 150"
-      role="img"
-      aria-label="Cost breakdown"
-    >
-      <circle
-        cx="75"
-        cy="75"
-        r={radius}
-        fill="none"
-        stroke="#ece3d8"
-        strokeWidth="18"
-      />
-      {total > 0 &&
-        segments.map((segment) => {
-          const length = (Math.max(0, segment.value) / total) * circumference;
-          const arc = (
-            <circle
-              key={segment.label}
-              cx="75"
-              cy="75"
-              r={radius}
-              fill="none"
-              stroke={segment.color}
-              strokeWidth="18"
-              strokeDasharray={`${length} ${circumference - length}`}
-              strokeDashoffset={-offset}
-              transform="rotate(-90 75 75)"
-            />
-          );
-          offset += length;
-          return arc;
-        })}
-      <text x="75" y="72" textAnchor="middle" className="donut-total-label">
-        Total
-      </text>
-      <text x="75" y="92" textAnchor="middle" className="donut-total-value">
-        {peso(total)}
-      </text>
-    </svg>
   );
 }
 
@@ -1460,26 +851,32 @@ function Profiles() {
     reader.readAsText(file);
   }
   return (
-    <main className="page profiles">
-      <div className="eyebrow">Configuration / this device</div>
-      <h1>Reusable profiles</h1>
-      <p className="lede">
+    <main className="mx-auto w-full max-w-[1184px] px-7 py-16 max-[760px]:px-5">
+      <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
+        Configuration / this device
+      </div>
+      <h1 className="mt-2 font-heading text-5xl font-extrabold tracking-[-0.055em] max-[760px]:text-[37px]">
+        Reusable profiles
+      </h1>
+      <p className="mt-3 max-w-[580px] text-base leading-relaxed text-muted-foreground">
         Keep your everyday printer assumptions close. These settings stay in
         this browser and are never synced.
       </p>
-      <div className="panel profile-editor">
-        <label className="field">
-          <span>Printer profile name</span>
-          <input
-            value={profile.name}
-            onChange={(event) => {
-              const next = { ...profile, name: event.target.value };
+      <Card className="mt-9 max-w-[620px]">
+        <CardContent className="space-y-5 p-6">
+          <div className="space-y-2">
+            <Label htmlFor="profile-name">Printer profile name</Label>
+            <Input
+              id="profile-name"
+              value={profile.name}
+              onChange={(event) => {
+                const next = { ...profile, name: event.target.value };
               setProfile(next);
               window.localStorage.setItem("cb-profile", JSON.stringify(next));
-            }}
-          />
-        </label>
-        <div className="field-grid">
+              }}
+            />
+          </div>
+        <div className="grid grid-cols-2 gap-4 max-[420px]:grid-cols-1">
           <Field
             label="Ink cost / ml"
             value={String(profile.inkCostPerMl)}
@@ -1501,11 +898,12 @@ function Profiles() {
             prefix="₱"
           />
         </div>
-        <div className="profile-actions">
-          <button className="primary-button" onClick={exportProfile}>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={exportProfile}>
             Export JSON
-          </button>
-          <label className="secondary-button">
+          </Button>
+          <Button variant="outline" asChild>
+            <label>
             Import JSON
             <input
               hidden
@@ -1513,18 +911,20 @@ function Profiles() {
               accept=".json,application/json"
               onChange={(event) => importProfile(event.target.files?.[0])}
             />
-          </label>
-          <button
-            className="secondary-button"
+            </label>
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => {
               window.localStorage.removeItem("cb-profile");
               setProfile(DEFAULT_PROFILE);
             }}
           >
             Restore defaults
-          </button>
+          </Button>
         </div>
-      </div>
+        </CardContent>
+      </Card>
     </main>
   );
 }
@@ -1536,7 +936,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/print-estimator" element={<PrintEstimator />} />
-          <Route path="/cost-estimator" element={<CostEstimator />} />
+          <Route path="/cost-estimator" element={<PricingCalculator />} />
           <Route path="/profiles" element={<Profiles />} />
         </Routes>
       </Layout>
