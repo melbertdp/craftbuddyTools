@@ -18,8 +18,10 @@ declare global {
 export function InstallAppButton() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [hidden, setHidden] = useState(false);
+  const [offlineReady, setOfflineReady] = useState(false);
 
   useEffect(() => {
+    setOfflineReady(localStorage.getItem("cb-offline-setup-complete") === "1");
     if (window.__craftBuddyInstallPrompt) {
       setInstallPrompt(window.__craftBuddyInstallPrompt);
     }
@@ -34,16 +36,19 @@ export function InstallAppButton() {
       window.__craftBuddyInstallPrompt = undefined;
       setInstallPrompt(null);
     };
+    const handleOfflineReady = () => setOfflineReady(true);
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
+    window.addEventListener("craftbuddy-offline-ready", handleOfflineReady);
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
+      window.removeEventListener("craftbuddy-offline-ready", handleOfflineReady);
     };
   }, []);
 
-  if (!installPrompt || hidden) return null;
+  if (!offlineReady || !installPrompt || hidden) return null;
 
   async function installApp() {
     if (!installPrompt) return;

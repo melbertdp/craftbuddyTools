@@ -1,4 +1,4 @@
-const CACHE_NAME = "craftbuddy-v5";
+const CACHE_NAME = "craftbuddy-v6";
 const PDF_TOOLS = [
   "edit",
   "sign",
@@ -19,26 +19,28 @@ const PDF_TOOLS = [
   "metadata",
   "compress",
 ];
-const LOCAL_ASSETS = [
-  "/models/movenet-lightning.onnx",
-  "/models/hivision_modnet.onnx",
-  "/ort/ort-wasm-simd-threaded.wasm",
-  "/ort/ort-wasm-simd-threaded.mjs",
-  "/ort/ort-wasm-simd-threaded.jspi.wasm",
-  "/ort/ort-wasm-simd-threaded.jspi.mjs",
-  "/ort/ort-wasm-simd-threaded.jsep.wasm",
-  "/ort/ort-wasm-simd-threaded.jsep.mjs",
-  "/ort/ort-wasm-simd-threaded.asyncify.wasm",
-  "/ort/ort-wasm-simd-threaded.asyncify.mjs",
-];
+const PDF_ROUTES = PDF_TOOLS.map((tool) => `/pdf/${tool}`);
+const CACHE_GROUPS = {
+  core: ["/"],
+  pdf: ["/pdf", ...PDF_ROUTES],
+  photo: [
+    "/models/movenet-lightning.onnx",
+    "/models/hivision_modnet.onnx",
+    "/ort/ort-wasm-simd-threaded.wasm",
+    "/ort/ort-wasm-simd-threaded.mjs",
+    "/ort/ort-wasm-simd-threaded.jspi.wasm",
+    "/ort/ort-wasm-simd-threaded.jspi.mjs",
+    "/ort/ort-wasm-simd-threaded.jsep.wasm",
+    "/ort/ort-wasm-simd-threaded.jsep.mjs",
+    "/ort/ort-wasm-simd-threaded.asyncify.wasm",
+    "/ort/ort-wasm-simd-threaded.asyncify.mjs",
+  ],
+};
 const APP_SHELL = [
   "/",
-  "/pdf",
-  ...PDF_TOOLS.map((tool) => `/pdf/${tool}`),
   "/icon-192.png",
   "/icon-512.png",
   "/manifest.webmanifest",
-  ...LOCAL_ASSETS,
 ];
 
 async function networkFirst(request) {
@@ -69,6 +71,28 @@ self.addEventListener("activate", (event) => {
       .keys()
       .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "CACHE_OFFLINE_MODULES") return;
+  const modules = Array.isArray(event.data.modules) ? event.data.modules : [];
+  const urls = [...new Set(modules.flatMap((module) => CACHE_GROUPS[module] ?? []))];
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.all(urls.map(async (url) => {
+        try {
+          const response = await fetch(url, { credentials: "same-origin" });
+          if (response.ok) await cache.put(url, response);
+        } catch {
+          // The client receives the failure through the message channel.
+          throw new Error(`Could not cache ${url}`);
+        }
+      }));
+      event.ports[0]?.postMessage({ ok: true });
+    }).catch(() => {
+      event.ports[0]?.postMessage({ ok: false });
+    }),
   );
 });
 

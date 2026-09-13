@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { InstallAppButton } from "@/components/InstallAppButton";
+import { OfflineSetupModal } from "@/components/OfflineSetupModal";
 import { ServiceWorkerRegistrar } from "@/pdf/components/common/ServiceWorkerRegistrar";
 
 export const metadata: Metadata = {
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           }}
         />
         {children}
+        <OfflineSetupModal />
         <InstallAppButton />
         <ServiceWorkerRegistrar />
       </body>

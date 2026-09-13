@@ -1,3 +1,6 @@
+"use client";
+
+import { Download } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function BrandHeader({ children }: { children?: ReactNode }) {
@@ -10,7 +13,18 @@ export function BrandHeader({ children }: { children?: ReactNode }) {
         >
           Craft Tools
         </a>
-        {children}
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="min-w-0">{children}</div>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("craftbuddy-open-offline-setup"))}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#b8cbb0] px-3 py-2 text-xs font-bold text-[#3d553b] transition hover:border-[#5d7052] hover:bg-[#edf2e9] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6f8368]/60"
+          >
+            <Download className="size-3.5" aria-hidden />
+            <span className="hidden sm:inline">Download</span>
+            <span className="sr-only sm:hidden">Download for offline use</span>
+          </button>
+        </div>
       </div>
     </header>
   );
