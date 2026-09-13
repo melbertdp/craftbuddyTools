@@ -53,8 +53,10 @@ import {
 import { detectPose } from "./pose";
 
 const DPI = 300;
-const DEFAULT_MARGIN_MM = 4;
-const DEFAULT_GAP_MM = 2.5;
+// Use the full paper by default. Margins and gaps are optional printer-safe
+// spacing, and enabling them can reduce the number of photos that fit.
+const DEFAULT_MARGIN_MM = 0;
+const DEFAULT_GAP_MM = 0;
 const BACKGROUNDS = [
   ["White", "#ffffff"],
   ["Light Blue", "#cfe6f4"],

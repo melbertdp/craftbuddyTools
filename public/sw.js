@@ -1,5 +1,45 @@
-const CACHE_NAME = "craftbuddy-v4";
-const APP_SHELL = ["/", "/pdf", "/icon-192.png", "/icon-512.png", "/manifest.webmanifest"];
+const CACHE_NAME = "craftbuddy-v5";
+const PDF_TOOLS = [
+  "edit",
+  "sign",
+  "organize",
+  "merge",
+  "split",
+  "extract",
+  "delete-pages",
+  "rotate",
+  "pdf-to-jpg",
+  "pdf-to-png",
+  "pdf-to-webp",
+  "jpg-to-pdf",
+  "png-to-pdf",
+  "images-to-pdf",
+  "watermark",
+  "page-numbers",
+  "metadata",
+  "compress",
+];
+const LOCAL_ASSETS = [
+  "/models/movenet-lightning.onnx",
+  "/models/hivision_modnet.onnx",
+  "/ort/ort-wasm-simd-threaded.wasm",
+  "/ort/ort-wasm-simd-threaded.mjs",
+  "/ort/ort-wasm-simd-threaded.jspi.wasm",
+  "/ort/ort-wasm-simd-threaded.jspi.mjs",
+  "/ort/ort-wasm-simd-threaded.jsep.wasm",
+  "/ort/ort-wasm-simd-threaded.jsep.mjs",
+  "/ort/ort-wasm-simd-threaded.asyncify.wasm",
+  "/ort/ort-wasm-simd-threaded.asyncify.mjs",
+];
+const APP_SHELL = [
+  "/",
+  "/pdf",
+  ...PDF_TOOLS.map((tool) => `/pdf/${tool}`),
+  "/icon-192.png",
+  "/icon-512.png",
+  "/manifest.webmanifest",
+  ...LOCAL_ASSETS,
+];
 
 async function networkFirst(request) {
   const cache = await caches.open(CACHE_NAME);
@@ -49,6 +89,9 @@ self.addEventListener("fetch", (event) => {
 
   if (
     url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/models/") ||
+    url.pathname.startsWith("/ort/") ||
+    url.pathname.startsWith("/overlays/") ||
     url.pathname === "/icon-192.png" ||
     url.pathname === "/icon-512.png" ||
     url.pathname === "/apple-icon.png"

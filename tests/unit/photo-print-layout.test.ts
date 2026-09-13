@@ -19,6 +19,14 @@ describe("ID photo layout", () => {
     expect(packPhotoItems(30, 30, [{ photoTypeId: "passport", widthMm: 35, heightMm: 45, quantity: 1 }])).toEqual([]);
   });
 
+  it("fits six 2x2 photos edge-to-edge on a 4R sheet", () => {
+    const cells = packPhotoItems(101.6, 152.4, [
+      { photoTypeId: "2x2in", widthMm: 50.8, heightMm: 50.8, quantity: 6 },
+    ]);
+    expect(cells).toHaveLength(6);
+    expect(hasOverlaps(cells)).toBe(false);
+  });
+
   it("fills gaps when mixing sizes on a 5R sheet", () => {
     const cells = packPhotoItems(127, 177.8, [
       { photoTypeId: "2x2in", widthMm: 50.8, heightMm: 50.8, quantity: 3 },
