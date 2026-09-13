@@ -1,6 +1,7 @@
 import type { Keypoint } from "./autofit";
+import { toolAsset } from "./assets";
 
-const POSE_MODEL_URL = "/models/movenet-lightning.onnx";
+const POSE_MODEL_URL = toolAsset("/models/movenet-lightning.onnx");
 const DEFAULT_INPUT_SIZE = 192;
 const DEFAULT_CHANNELS = 4;
 const KEYPOINT_COUNT = 17;
@@ -25,7 +26,7 @@ export async function getPoseRuntime(): Promise<PoseRuntime> {
   if (!runtimePromise) {
     runtimePromise = (async () => {
       const ort = await import("onnxruntime-web");
-      ort.env.wasm.wasmPaths = "/ort/";
+      ort.env.wasm.wasmPaths = toolAsset("/ort/");
       ort.env.wasm.numThreads = 1;
       const session = await ort.InferenceSession.create(POSE_MODEL_URL, {
         executionProviders: ["wasm"],

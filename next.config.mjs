@@ -1,12 +1,12 @@
 const isDev = process.env.NODE_ENV !== "production";
 
 const scriptSrc = isDev
-  ? "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net"
-  : "'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net";
+  ? "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app"
+  : "'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app";
 
 const connectSrc = isDev
-  ? "'self' data: ws: wss: http://localhost:* http://127.0.0.1:* https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://cdn.jsdelivr.net https://*.jsdelivr.net"
-  : "'self' data: https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://cdn.jsdelivr.net https://*.jsdelivr.net";
+  ? "'self' data: ws: wss: http://localhost:* http://127.0.0.1:* https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app"
+  : "'self' data: https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app";
 
 const contentSecurityPolicy = [
   "default-src 'self'",

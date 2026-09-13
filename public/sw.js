@@ -1,4 +1,5 @@
 const CACHE_NAME = "craftbuddy-v6";
+const TOOL_ASSET_BASE_URL = "https://toolassets.craftbuddy.app/tools";
 const PDF_TOOLS = [
   "edit",
   "sign",
@@ -24,16 +25,16 @@ const CACHE_GROUPS = {
   core: ["/"],
   pdf: ["/pdf", ...PDF_ROUTES],
   photo: [
-    "/models/movenet-lightning.onnx",
-    "/models/hivision_modnet.onnx",
-    "/ort/ort-wasm-simd-threaded.wasm",
-    "/ort/ort-wasm-simd-threaded.mjs",
-    "/ort/ort-wasm-simd-threaded.jspi.wasm",
-    "/ort/ort-wasm-simd-threaded.jspi.mjs",
-    "/ort/ort-wasm-simd-threaded.jsep.wasm",
-    "/ort/ort-wasm-simd-threaded.jsep.mjs",
-    "/ort/ort-wasm-simd-threaded.asyncify.wasm",
-    "/ort/ort-wasm-simd-threaded.asyncify.mjs",
+    `${TOOL_ASSET_BASE_URL}/models/movenet-lightning.onnx`,
+    `${TOOL_ASSET_BASE_URL}/models/hivision_modnet.onnx`,
+    `${TOOL_ASSET_BASE_URL}/ort/ort-wasm-simd-threaded.wasm`,
+    `${TOOL_ASSET_BASE_URL}/ort/ort-wasm-simd-threaded.mjs`,
+    `${TOOL_ASSET_BASE_URL}/ort/ort-wasm-simd-threaded.jspi.wasm`,
+    `${TOOL_ASSET_BASE_URL}/ort/ort-wasm-simd-threaded.jspi.mjs`,
+    `${TOOL_ASSET_BASE_URL}/ort/ort-wasm-simd-threaded.jsep.wasm`,
+    `${TOOL_ASSET_BASE_URL}/ort/ort-wasm-simd-threaded.jsep.mjs`,
+    `${TOOL_ASSET_BASE_URL}/ort/ort-wasm-simd-threaded.asyncify.wasm`,
+    `${TOOL_ASSET_BASE_URL}/ort/ort-wasm-simd-threaded.asyncify.mjs`,
   ],
 };
 const APP_SHELL = [

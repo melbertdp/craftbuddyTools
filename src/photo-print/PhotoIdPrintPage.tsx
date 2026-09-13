@@ -51,6 +51,7 @@ import {
   type GarmentMeta,
 } from "./garments";
 import { detectPose } from "./pose";
+import { toolAsset } from "./assets";
 
 const DPI = 300;
 // Use the full paper by default. Margins and gaps are optional printer-safe
@@ -76,10 +77,10 @@ async function getBackgroundModel() {
   if (!modelPromise) {
     modelPromise = (async () => {
       const ort = await import("onnxruntime-web");
-      ort.env.wasm.wasmPaths = "/ort/";
+      ort.env.wasm.wasmPaths = toolAsset("/ort/");
       ort.env.wasm.numThreads = 1;
       const session = await ort.InferenceSession.create(
-        "/models/hivision_modnet.onnx",
+        toolAsset("/models/hivision_modnet.onnx"),
         { executionProviders: ["wasm"], graphOptimizationLevel: "all" },
       );
       return { session, ort };
