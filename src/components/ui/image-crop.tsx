@@ -15,3 +15,7 @@ export function CropperImage({ className, ...props }: React.ComponentProps<typeo
 export function CropperArea({ className, ...props }: React.ComponentProps<typeof CropperPrimitive.CropArea>) {
   return <CropperPrimitive.CropArea className={cn("pointer-events-none absolute border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,.35)]", className)} {...props} />;
 }
+
+export function CropperDescription({ className, ...props }: React.ComponentProps<typeof CropperPrimitive.Description>) {
+  return <CropperPrimitive.Description className={cn("sr-only", className)} {...props} />;
+}

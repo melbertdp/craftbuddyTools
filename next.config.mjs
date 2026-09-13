@@ -1,12 +1,12 @@
 const isDev = process.env.NODE_ENV !== "production";
 
 const scriptSrc = isDev
-  ? "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:"
-  : "'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:";
+  ? "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net"
+  : "'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net";
 
 const connectSrc = isDev
-  ? "'self' ws: wss: http://localhost:* http://127.0.0.1:*"
-  : "'self'";
+  ? "'self' data: ws: wss: http://localhost:* http://127.0.0.1:* https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://cdn.jsdelivr.net https://*.jsdelivr.net"
+  : "'self' data: https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://cdn.jsdelivr.net https://*.jsdelivr.net";
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -20,7 +20,7 @@ const contentSecurityPolicy = [
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob:",
   "media-src 'self' blob:",
-  "worker-src 'self' blob:",
+  "worker-src 'self' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net",
   `connect-src ${connectSrc}`,
   "upgrade-insecure-requests",
 ].join("; ");
