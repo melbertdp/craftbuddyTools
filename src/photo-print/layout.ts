@@ -22,6 +22,7 @@ export type SheetCell = {
 };
 
 export const PHOTO_SIZES: readonly PhotoSize[] = [
+  { id: "standard", label: "Standard", widthMm: 31, heightMm: 41 },
   { id: "1x1in", label: "1 × 1 in", widthMm: 25.4, heightMm: 25.4 },
   { id: "2x2in", label: "2 × 2 in", widthMm: 50.8, heightMm: 50.8 },
   { id: "passport", label: "Passport", widthMm: 35, heightMm: 45 },
