@@ -5,12 +5,11 @@ import { Download, FlipHorizontal, ImagePlus, Loader2, Printer, Redo2, RotateCcw
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Cropper, CropperArea, CropperDescription, CropperImage } from "@/components/ui/image-crop";
-import { PAPER_SIZES, PHOTO_SIZES, orientedPaper, packPhotoItems, type SheetCell } from "./layout";
+import { PAPER_SIZES, PHOTO_SIZES, fitCropArea, orientedPaper, packPhotoItems, type SheetCell } from "./layout";
 
 const DPI = 300;
-const MARGIN_MM = 4;
-const GAP_MM = 2.5;
-const QUALITIES = ["Epson Premium Glossy", "Epson Matte Paper", "Plain Paper", "Glossy Photo Paper"];
+const DEFAULT_MARGIN_MM = 4;
+const DEFAULT_GAP_MM = 2.5;
 const BACKGROUNDS = [
   ["White", "#ffffff"], ["Light Blue", "#cfe6f4"], ["Light Green", "#d0ebd2"],
   ["Navy Blue", "#0a2463"], ["Red", "#c62828"], ["Yellow", "#ffe082"], ["Gray", "#bdbdbd"],
@@ -161,28 +160,42 @@ function drawCover(context: CanvasRenderingContext2D, image: CanvasImageSource &
   context.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
 }
 
-function maxCopies(widthMm: number, heightMm: number, photoWidthMm: number, photoHeightMm: number) {
-  const columns = Math.max(0, Math.floor((widthMm - MARGIN_MM * 2 + GAP_MM) / (photoWidthMm + GAP_MM)));
-  const rows = Math.max(0, Math.floor((heightMm - MARGIN_MM * 2 + GAP_MM) / (photoHeightMm + GAP_MM)));
+function maxCopies(widthMm: number, heightMm: number, photoWidthMm: number, photoHeightMm: number, marginMm: number, gapMm: number) {
+  const columns = Math.max(0, Math.floor((widthMm - marginMm * 2 + gapMm) / (photoWidthMm + gapMm)));
+  const rows = Math.max(0, Math.floor((heightMm - marginMm * 2 + gapMm) / (photoHeightMm + gapMm)));
   return columns * rows;
 }
 
-function cellsForCopies(widthMm: number, heightMm: number, copies: number, photoWidthMm: number, photoHeightMm: number, photoTypeId: string): SheetCell[] {
-  const columns = Math.max(1, Math.floor((widthMm - MARGIN_MM * 2 + GAP_MM) / (photoWidthMm + GAP_MM)));
-  const placedColumns = Math.min(copies, columns);
-  const totalWidth = placedColumns * photoWidthMm + Math.max(0, placedColumns - 1) * GAP_MM;
-  const rows = Math.ceil(copies / columns);
-  const totalHeight = rows * photoHeightMm + Math.max(0, rows - 1) * GAP_MM;
-  const startX = (widthMm - totalWidth) / 2;
-  const startY = (heightMm - totalHeight) / 2;
+function cellsForCopies(widthMm: number, heightMm: number, copies: number, photoWidthMm: number, photoHeightMm: number, photoTypeId: string, marginMm: number, gapMm: number): SheetCell[] {
+  const columns = Math.max(1, Math.floor((widthMm - marginMm * 2 + gapMm) / (photoWidthMm + gapMm)));
+  const startX = marginMm;
+  const startY = marginMm;
   return Array.from({ length: copies }, (_, index) => ({
     id: `${photoTypeId}-${index}`,
     photoTypeId,
-    xMm: startX + (index % columns) * (photoWidthMm + GAP_MM),
-    yMm: startY + Math.floor(index / columns) * (photoHeightMm + GAP_MM),
+    xMm: startX + (index % columns) * (photoWidthMm + gapMm),
+    yMm: startY + Math.floor(index / columns) * (photoHeightMm + gapMm),
     widthMm: photoWidthMm,
     heightMm: photoHeightMm,
   }));
+}
+
+function drawTrimMarks(context: CanvasRenderingContext2D, cell: SheetCell, scale: number, markMm = 3) {
+  const x = cell.xMm * scale;
+  const y = cell.yMm * scale;
+  const width = cell.widthMm * scale;
+  const height = cell.heightMm * scale;
+  const mark = markMm * scale;
+  context.save();
+  context.strokeStyle = "#000000";
+  context.lineWidth = Math.max(1, Math.round(scale * 0.2));
+  context.beginPath();
+  context.moveTo(x - mark, y); context.lineTo(x, y); context.moveTo(x, y - mark); context.lineTo(x, y);
+  context.moveTo(x + width, y); context.lineTo(x + width + mark, y); context.moveTo(x + width, y - mark); context.lineTo(x + width, y);
+  context.moveTo(x - mark, y + height); context.lineTo(x, y + height); context.moveTo(x, y + height); context.lineTo(x, y + height + mark);
+  context.moveTo(x + width, y + height); context.lineTo(x + width + mark, y + height); context.moveTo(x + width, y + height); context.lineTo(x + width, y + height + mark);
+  context.stroke();
+  context.restore();
 }
 
 export default function PhotoIdPrintPage() {
@@ -203,7 +216,9 @@ export default function PhotoIdPrintPage() {
   const [mixSizes, setMixSizes] = React.useState(false);
   const [mixQuantities, setMixQuantities] = React.useState<Record<string, number>>({ standard: 4 });
   const [landscape, setLandscape] = React.useState(false);
-  const [quality, setQuality] = React.useState(0);
+  const [marginMm, setMarginMm] = React.useState(DEFAULT_MARGIN_MM);
+  const [gapMm, setGapMm] = React.useState(DEFAULT_GAP_MM);
+  const [cutMarks, setCutMarks] = React.useState(true);
   const [copies, setCopies] = React.useState(4);
   const [zoom, setZoom] = React.useState(1);
   const [rotation, setRotation] = React.useState(0);
@@ -221,22 +236,27 @@ export default function PhotoIdPrintPage() {
   const photoSize = PHOTO_SIZES.find((size) => size.id === photoSizeId) ?? PHOTO_SIZES[0];
   const photoWidthMm = photoSize.widthMm;
   const photoHeightMm = photoSize.heightMm;
-  const maximum = maxCopies(paper.widthMm, paper.heightMm, photoWidthMm, photoHeightMm);
+  const maximum = maxCopies(paper.widthMm, paper.heightMm, photoWidthMm, photoHeightMm, marginMm, gapMm);
   const cropSize = mixSizes ? PHOTO_SIZES.find((size) => (mixQuantities[size.id] ?? 0) > 0) ?? photoSize : photoSize;
   const cells = mixSizes
     ? packPhotoItems(
         paper.widthMm,
         paper.heightMm,
         PHOTO_SIZES.filter((size) => (mixQuantities[size.id] ?? 0) > 0).map((size) => ({ photoTypeId: size.id, widthMm: size.widthMm, heightMm: size.heightMm, quantity: mixQuantities[size.id] ?? 0 })),
-        MARGIN_MM,
-        GAP_MM,
+        marginMm,
+        gapMm,
       )
-    : cellsForCopies(paper.widthMm, paper.heightMm, Math.min(copies, maximum), photoWidthMm, photoHeightMm, photoSize.id);
+    : cellsForCopies(paper.widthMm, paper.heightMm, Math.min(copies, maximum), photoWidthMm, photoHeightMm, photoSize.id, marginMm, gapMm);
   const totalPhotos = cells.length;
 
   React.useEffect(() => {
-    lastCropAreaRef.current = null;
-  }, [photoSizeId, mixSizes, cropSize.widthMm, cropSize.heightMm]);
+    const area = lastCropAreaRef.current;
+    if (!image || !area) return;
+    const next = fitCropArea(area, cropSize.widthMm / cropSize.heightMm, image.naturalWidth, image.naturalHeight);
+    lastCropAreaRef.current = next;
+    setCropArea(next);
+    setCrop(cropToCanvas(image, next));
+  }, [image, cropSize.widthMm, cropSize.heightMm]);
 
   React.useEffect(() => {
     setCopies((value) => Math.min(Math.max(1, value), Math.max(1, maximum)));
@@ -362,6 +382,24 @@ export default function PhotoIdPrintPage() {
     reader.readAsDataURL(file);
   }
 
+  function removePhoto() {
+    setImageSrc(null);
+    setImage(null);
+    lastCropAreaRef.current = null;
+    processedCropRef.current = null;
+    processedCropSourceRef.current = null;
+    setCrop(null);
+    setCropArea(null);
+    setProcessedCrop(null);
+    setBgRemove(false);
+    setBgStatus("");
+    setHistory([]);
+    setFuture([]);
+    setZoom(1);
+    setRotation(0);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
   function changeImage(transform: (source: HTMLCanvasElement) => HTMLCanvasElement) {
     if (!imageSrc) return;
     rememberCurrent();
@@ -398,7 +436,7 @@ export default function PhotoIdPrintPage() {
     const sheet = document.createElement("canvas"); sheet.width = Math.round(paper.widthMm * scale); sheet.height = Math.round(paper.heightMm * scale);
     const context = sheet.getContext("2d"); if (!context) return;
     context.fillStyle = "#ffffff"; context.fillRect(0, 0, sheet.width, sheet.height);
-    cells.forEach((cell) => { drawCover(context, finalCanvas, cell.xMm * scale, cell.yMm * scale, cell.widthMm * scale, cell.heightMm * scale); context.strokeStyle = "#000"; context.lineWidth = 2; context.strokeRect(cell.xMm * scale, cell.yMm * scale, cell.widthMm * scale, cell.heightMm * scale); });
+    cells.forEach((cell) => { drawCover(context, finalCanvas, cell.xMm * scale, cell.yMm * scale, cell.widthMm * scale, cell.heightMm * scale); context.strokeStyle = "#000"; context.lineWidth = 2; context.strokeRect(cell.xMm * scale, cell.yMm * scale, cell.widthMm * scale, cell.heightMm * scale); if (cutMarks) drawTrimMarks(context, cell, scale); });
     const link = document.createElement("a"); link.download = `${mixSizes ? "mixed" : photoSize.id}_${totalPhotos}x.png`; link.href = sheet.toDataURL("image/png"); link.click();
   }
 
@@ -407,6 +445,17 @@ export default function PhotoIdPrintPage() {
     const { jsPDF } = await import("jspdf");
     const pdf = new jsPDF({ unit: "mm", format: [paper.widthMm, paper.heightMm], orientation: paper.widthMm > paper.heightMm ? "landscape" : "portrait" });
     cells.forEach((cell) => pdf.addImage(finalCanvas.toDataURL("image/png"), "PNG", cell.xMm, cell.yMm, cell.widthMm, cell.heightMm));
+    if (cutMarks) {
+      pdf.setDrawColor(0); pdf.setLineWidth(0.2);
+      const mark = 3;
+      cells.forEach((cell) => {
+        const x = cell.xMm, y = cell.yMm, w = cell.widthMm, h = cell.heightMm;
+        pdf.line(x - mark, y, x, y); pdf.line(x, y - mark, x, y);
+        pdf.line(x + w, y, x + w + mark, y); pdf.line(x + w, y - mark, x + w, y);
+        pdf.line(x - mark, y + h, x, y + h); pdf.line(x, y + h, x, y + h + mark);
+        pdf.line(x + w, y + h, x + w + mark, y + h); pdf.line(x + w, y + h, x + w, y + h + mark);
+      });
+    }
     pdf.save(`${mixSizes ? "mixed" : photoSize.id}_${totalPhotos}x.pdf`);
   }
 
@@ -415,26 +464,26 @@ export default function PhotoIdPrintPage() {
     const data = document.createElement("canvas"); data.width = Math.round(paper.widthMm / 25.4 * DPI); data.height = Math.round(paper.heightMm / 25.4 * DPI);
     const context = data.getContext("2d"); if (!context) return;
     context.fillStyle = "#fff"; context.fillRect(0, 0, data.width, data.height);
-    const scale = DPI / 25.4; cells.forEach((cell) => { drawCover(context, finalCanvas, cell.xMm * scale, cell.yMm * scale, cell.widthMm * scale, cell.heightMm * scale); context.strokeStyle = "#000"; context.strokeRect(cell.xMm * scale, cell.yMm * scale, cell.widthMm * scale, cell.heightMm * scale); });
+    const scale = DPI / 25.4; cells.forEach((cell) => { drawCover(context, finalCanvas, cell.xMm * scale, cell.yMm * scale, cell.widthMm * scale, cell.heightMm * scale); context.strokeStyle = "#000"; context.strokeRect(cell.xMm * scale, cell.yMm * scale, cell.widthMm * scale, cell.heightMm * scale); if (cutMarks) drawTrimMarks(context, cell, scale); });
     const popup = window.open("", "_blank", "width=900,height=1000"); if (!popup) return;
     const width = paper.widthMm / 25.4; const height = paper.heightMm / 25.4;
-    popup.document.write(`<!doctype html><title>Print Preview</title><style>@page{size:${width}in ${height}in;margin:0}body{margin:0;background:#525659;font-family:system-ui}.bar{padding:14px 20px;background:#fff;display:flex;justify-content:space-between}.tip{padding:12px 20px;background:#fff8e1;font-size:13px}.sheet{display:flex;justify-content:center;padding:30px}.sheet img{width:${width}in;height:${height}in;background:#fff}</style><div class="bar"><b>Print Preview</b><button onclick="window.print()">Print</button></div><div class="tip"><b>Tip:</b> Use 100% scale / Actual size. ${QUALITIES[quality]}</div><div class="sheet"><img src="${data.toDataURL("image/png")}" alt="Print sheet"></div>`);
+    popup.document.write(`<!doctype html><title>Print Preview</title><style>@page{size:${width}in ${height}in;margin:0}body{margin:0;background:#525659;font-family:system-ui}.bar{padding:14px 20px;background:#fff;display:flex;justify-content:space-between}.tip{padding:12px 20px;background:#fff8e1;font-size:13px}.sheet{display:flex;justify-content:center;padding:30px}.sheet img{width:${width}in;height:${height}in;background:#fff}</style><div class="bar"><b>Print Preview</b><button onclick="window.print()">Print</button></div><div class="tip"><b>Tip:</b> Use 100% scale / Actual size.</div><div class="sheet"><img src="${data.toDataURL("image/png")}" alt="Print sheet"></div>`);
     popup.document.close();
   }
 
   return <main className="mx-auto w-full max-w-[1400px] px-4 py-8 text-ink md:px-7">
     <header className="mb-6"><p className="text-[11px] font-bold uppercase tracking-[.16em] text-primary">Creative tools / passport studio</p><h1 className="mt-2 font-heading text-4xl font-extrabold tracking-[-.055em]">Photo Print Maker</h1><p className="mt-2 text-sm text-muted-foreground">Create print-ready passport and ID photos locally in your browser.</p></header>
-    <div className="mb-6 grid grid-cols-3 gap-2">{["Upload & Edit", "Background & Paper", "Preview & Print"].map((label, index) => <button key={label} type="button" onClick={() => setActiveStep(index + 1)} className={`rounded border px-3 py-2 text-left text-xs ${activeStep === index + 1 ? "border-primary bg-primary/10" : "border-line text-muted-foreground"}`}><b className="mr-1 text-primary">{index + 1}</b>{label}</button>)}</div>
+    <div className="mb-6 grid grid-cols-2 gap-2">{["Edit & Layout", "Background & Print"].map((label, index) => <button key={label} type="button" onClick={() => setActiveStep(index + 1)} className={`rounded border px-3 py-2 text-left text-xs ${activeStep === index + 1 ? "border-primary bg-primary/10" : "border-line text-muted-foreground"}`}><b className="mr-1 text-primary">{index + 1}</b>{label}</button>)}</div>
     <div className="grid gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
       <aside className="space-y-4">
-        {activeStep === 1 && <section className="space-y-4 rounded border border-line bg-paper p-5"><h2 className="text-sm font-bold">1. Upload Photo</h2><button type="button" onClick={() => fileRef.current?.click()} onDragOver={(event) => { event.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={(event) => { event.preventDefault(); setDragOver(false); handleFile(event.dataTransfer.files?.[0]); }} className={`flex min-h-36 w-full flex-col items-center justify-center gap-2 rounded border-2 border-dashed p-5 text-center ${dragOver ? "border-primary bg-primary/10" : "border-line"}`}><ImagePlus className="text-muted-foreground" /><b>{imageSrc ? "Photo loaded" : "Click or drop photo"}</b>{imageSrc && image && <span className="text-xs text-muted-foreground">{image.naturalWidth} × {image.naturalHeight}px</span>}<input ref={fileRef} hidden type="file" accept="image/*" onChange={(event) => handleFile(event.target.files?.[0])} /></button>{imageSrc && <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => changeImage((source) => rotateCanvas(source, -90))}><RotateCcw className="mr-1 h-3.5 w-3.5" />Left</Button><Button variant="outline" size="sm" onClick={() => changeImage((source) => rotateCanvas(source, 90))}><RotateCw className="mr-1 h-3.5 w-3.5" />Right</Button><Button variant="outline" size="sm" onClick={() => changeImage(flipCanvas)}><FlipHorizontal className="mr-1 h-3.5 w-3.5" />Flip</Button><Button variant="outline" size="sm" disabled={!history.length} onClick={undo}><Undo2 className="mr-1 h-3.5 w-3.5" />Undo</Button><Button variant="outline" size="sm" disabled={!future.length} onClick={redo}><Redo2 className="mr-1 h-3.5 w-3.5" />Redo</Button></div>}</section>}
-        {activeStep === 1 && imageSrc && <section className="space-y-3 rounded border border-line bg-paper p-5"><h2 className="text-sm font-bold">2. Crop & Adjust</h2><Cropper className="h-64" image={imageSrc} aspectRatio={cropSize.widthMm / cropSize.heightMm} zoom={zoom} minZoom={1} maxZoom={3} onZoomChange={setZoom} onCropChange={handleCropChange}><CropperDescription>Drag the image to position the face and use the crop area to frame the passport photo.</CropperDescription><CropperImage /><CropperArea /><div className="pointer-events-none absolute inset-[33%] border border-white/30" /></Cropper><label className="flex items-center gap-3 text-xs">Zoom <Slider value={[zoom]} min={1} max={3} step={0.05} onValueChange={(value) => setZoom(value[0])} aria-label="Zoom" /><b>{Math.round(zoom * 100)}%</b></label>{cropArea && <p className="text-[11px] text-muted-foreground">Crop ready at {Math.round(cropArea.width)} × {Math.round(cropArea.height)} source pixels.</p>}{[["Brightness", brightness, setBrightness, 50, 150], ["Contrast", contrast, setContrast, 50, 150], ["Saturation", saturation, setSaturation, 0, 200]].map(([label, value, setter, min, max]) => <label key={label as string} className="flex items-center gap-2 text-xs"><span className="w-20">{label as string}</span><Slider value={[value as number]} min={min as number} max={max as number} step={1} onValueChange={(next) => (setter as React.Dispatch<React.SetStateAction<number>>)(next[0])} aria-label={label as string} /><b>{value as number}%</b></label>)}</section>}
+        {activeStep === 1 && <section className="space-y-4 rounded border border-line bg-paper p-5"><h2 className="text-sm font-bold">1. Upload Photo</h2><input ref={fileRef} hidden type="file" accept="image/*" onChange={(event) => handleFile(event.target.files?.[0])} />{imageSrc ? <div className="space-y-2"><p className="text-xs text-muted-foreground">{image ? `${image.naturalWidth} × ${image.naturalHeight}px` : "Photo loaded"}</p><div className="flex gap-2"><Button variant="outline" className="flex-1" onClick={() => fileRef.current?.click()}>Replace</Button><Button variant="outline" className="flex-1" onClick={removePhoto}>Remove photo</Button></div></div> : <button type="button" onClick={() => fileRef.current?.click()} onDragOver={(event) => { event.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={(event) => { event.preventDefault(); setDragOver(false); handleFile(event.dataTransfer.files?.[0]); }} className={`flex min-h-36 w-full flex-col items-center justify-center gap-2 rounded border-2 border-dashed p-5 text-center ${dragOver ? "border-primary bg-primary/10" : "border-line"}`}><ImagePlus className="text-muted-foreground" /><b>Click or drop photo</b></button>}{imageSrc && <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => changeImage((source) => rotateCanvas(source, -90))}><RotateCcw className="mr-1 h-3.5 w-3.5" />Left</Button><Button variant="outline" size="sm" onClick={() => changeImage((source) => rotateCanvas(source, 90))}><RotateCw className="mr-1 h-3.5 w-3.5" />Right</Button><Button variant="outline" size="sm" onClick={() => changeImage(flipCanvas)}><FlipHorizontal className="mr-1 h-3.5 w-3.5" />Flip</Button><Button variant="outline" size="sm" disabled={!history.length} onClick={undo}><Undo2 className="mr-1 h-3.5 w-3.5" />Undo</Button><Button variant="outline" size="sm" disabled={!future.length} onClick={redo}><Redo2 className="mr-1 h-3.5 w-3.5" />Redo</Button></div>}</section>}
+        {(activeStep === 1 || activeStep === 2) && imageSrc && <section className="space-y-3 rounded border border-line bg-paper p-5"><h2 className="text-sm font-bold">2. Crop & Adjust</h2><Cropper className="h-64" image={imageSrc} aspectRatio={cropSize.widthMm / cropSize.heightMm} zoom={zoom} minZoom={1} maxZoom={3} onZoomChange={setZoom} onCropChange={handleCropChange}><CropperDescription>Drag the image to position the face and use the crop area to frame the passport photo.</CropperDescription><CropperImage /><CropperArea /><div className="pointer-events-none absolute inset-[33%] border border-white/30" /></Cropper><label className="flex items-center gap-3 text-xs">Zoom <Slider value={[zoom]} min={1} max={3} step={0.05} onValueChange={(value) => setZoom(value[0])} aria-label="Zoom" /><b>{Math.round(zoom * 100)}%</b></label>{cropArea && <p className="text-[11px] text-muted-foreground">Crop ready at {Math.round(cropArea.width)} × {Math.round(cropArea.height)} source pixels.</p>}{[["Brightness", brightness, setBrightness, 50, 150], ["Contrast", contrast, setContrast, 50, 150], ["Saturation", saturation, setSaturation, 0, 200]].map(([label, value, setter, min, max]) => <label key={label as string} className="flex items-center gap-2 text-xs"><span className="w-20">{label as string}</span><Slider value={[value as number]} min={min as number} max={max as number} step={1} onValueChange={(next) => (setter as React.Dispatch<React.SetStateAction<number>>)(next[0])} aria-label={label as string} /><b>{value as number}%</b></label>)}</section>}
         {activeStep === 2 && <section className="space-y-4 rounded border border-line bg-paper p-5"><h2 className="text-sm font-bold">3. Background</h2><label className="flex items-center gap-3 rounded border border-line bg-background p-3 text-sm"><input type="checkbox" checked={bgRemove} onChange={(event) => setBgRemove(event.target.checked)} /><span><b>Remove Background</b><small className="block text-xs text-muted-foreground">AI · Hivision MODNet runs locally</small></span></label>{bgLoading && <p className="flex items-center gap-2 text-xs text-primary"><Loader2 className="h-3.5 w-3.5 animate-spin" />{bgStatus}</p>}{!bgLoading && bgStatus && <p className={`text-xs ${bgStatus.startsWith("Error") ? "text-red-600" : "text-green-700"}`}>{bgStatus}</p>}<div><p className="mb-2 text-xs font-semibold">Background color</p><div className="flex flex-wrap gap-2">{BACKGROUNDS.map(([label, value]) => <button key={value} type="button" title={label} onClick={() => setBgColor(value)} className={`h-8 w-8 rounded-full border-2 ${bgColor === value ? "border-primary ring-2 ring-primary/20" : "border-line"}`} style={{ background: value }} />)}</div><p className="mt-1 text-[11px] text-muted-foreground">{BACKGROUNDS.find(([, value]) => value === bgColor)?.[0]}</p></div></section>}
-        {activeStep === 2 && <section className="space-y-4 rounded border border-line bg-paper p-5"><h2 className="text-sm font-bold">4. Photo Size & Paper</h2><label className="flex items-center gap-3 rounded border border-line bg-background p-3 text-sm"><input type="checkbox" checked={mixSizes} onChange={(event) => setMixSizes(event.target.checked)} /><span><b>Mix photo sizes</b><small className="block text-xs text-muted-foreground">Fill one sheet with different ID photo sizes</small></span></label>{mixSizes ? <div className="space-y-2"><p className="text-xs font-semibold">Quantities</p>{PHOTO_SIZES.map((size) => <div key={size.id} className="flex items-center justify-between rounded border border-line px-3 py-2 text-xs"><span>{size.label}<small className="ml-2 text-muted-foreground">{size.widthMm} × {size.heightMm} mm</small></span><div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => setMixQuantities((quantities) => ({ ...quantities, [size.id]: Math.max(0, (quantities[size.id] ?? 0) - 1) }))}>−</Button><b className="min-w-6 text-center">{mixQuantities[size.id] ?? 0}</b><Button variant="outline" size="sm" onClick={() => setMixQuantities((quantities) => ({ ...quantities, [size.id]: Math.min(99, (quantities[size.id] ?? 0) + 1) }))}>+</Button></div></div>)}</div> : <div className="space-y-2"><p className="text-xs font-semibold">Photo size</p><div className="grid grid-cols-2 gap-2">{PHOTO_SIZES.map((size) => <button key={size.id} type="button" onClick={() => setPhotoSizeId(size.id)} className={`rounded border px-3 py-2 text-left text-xs ${photoSizeId === size.id ? "border-primary bg-primary/10" : "border-line"}`}><span>{size.label}</span><small className="block text-muted-foreground">{size.widthMm} × {size.heightMm} mm</small></button>)}</div></div>}<div className="flex gap-2"><Button className="flex-1" variant={!landscape ? "secondary" : "outline"} onClick={() => setLandscape(false)}>Portrait</Button><Button className="flex-1" variant={landscape ? "secondary" : "outline"} onClick={() => setLandscape(true)}>Landscape</Button></div><div className="space-y-2">{PAPER_SIZES.filter((paperOption) => ["4r", "5r", "a4", "letter"].includes(paperOption.id)).map((paperOption) => <button key={paperOption.id} type="button" onClick={() => setPaperId(paperOption.id)} className={`flex w-full items-center justify-between rounded border px-3 py-2 text-left text-xs ${paperId === paperOption.id ? "border-primary bg-primary/10" : "border-line"}`}><span>{paperOption.label}<small className="ml-2 text-muted-foreground">{paperOption.widthMm} × {paperOption.heightMm} mm</small></span><b>{maxCopies(orientedPaper(paperOption, landscape ? "landscape" : "portrait").widthMm, orientedPaper(paperOption, landscape ? "landscape" : "portrait").heightMm, photoWidthMm, photoHeightMm)} max</b></button>)}</div>{!mixSizes && <><div className="flex items-center justify-center gap-4"><Button variant="outline" onClick={() => setCopies((value) => Math.max(1, value - 1))}>−</Button><strong className="min-w-12 text-center text-3xl text-primary">{copies}</strong><Button variant="outline" onClick={() => setCopies((value) => Math.min(maximum, value + 1))}>+</Button></div><p className="text-center text-[11px] text-muted-foreground">{photoSize.label} · {photoWidthMm} × {photoHeightMm} mm · Maximum {maximum}</p></>}<div className="space-y-2"><p className="text-xs font-semibold">Paper quality</p>{QUALITIES.map((label, index) => <button key={label} type="button" onClick={() => setQuality(index)} className={`block w-full rounded border px-3 py-2 text-left text-xs ${quality === index ? "border-primary bg-primary/10" : "border-line"}`}>{label}</button>)}</div></section>}
-        {activeStep === 3 && <section className="space-y-2 rounded border border-line bg-paper p-5"><h2 className="mb-3 text-sm font-bold">5. Print</h2><p className="flex justify-between text-xs"><span>Paper</span><b>{basePaper.label} · {landscape ? "Landscape" : "Portrait"}</b></p><p className="flex justify-between text-xs"><span>Quality</span><b>{QUALITIES[quality]}</b></p><p className="flex justify-between text-xs"><span>Photos</span><b>{totalPhotos}</b></p><Button className="mt-3 w-full" disabled={!finalUrl || !totalPhotos} onClick={printPreview}><Printer className="mr-2 h-4 w-4" />Print Preview & Print</Button><div className="flex gap-2"><Button className="flex-1" variant="outline" disabled={!finalUrl || !totalPhotos} onClick={downloadPng}><Download className="mr-1 h-4 w-4" />PNG 300 DPI</Button><Button className="flex-1" variant="outline" disabled={!finalUrl || !totalPhotos} onClick={() => void downloadPdf()}><Download className="mr-1 h-4 w-4" />PDF</Button></div></section>}
-        <div className="flex gap-2"><Button className="flex-1" variant="outline" disabled={activeStep === 1} onClick={() => setActiveStep((value) => value - 1)}>Back</Button>{activeStep < 3 && <Button className="flex-1" disabled={activeStep === 1 && !imageSrc} onClick={() => setActiveStep((value) => value + 1)}>Next</Button>}</div>
+        {activeStep === 1 && <section className="space-y-4 rounded border border-line bg-paper p-5"><h2 className="text-sm font-bold">4. Photo Size & Paper</h2><label className="flex items-center gap-3 rounded border border-line bg-background p-3 text-sm"><input type="checkbox" checked={mixSizes} onChange={(event) => setMixSizes(event.target.checked)} /><span><b>Mix photo sizes</b><small className="block text-xs text-muted-foreground">Fill one sheet with different ID photo sizes</small></span></label>{mixSizes ? <div className="space-y-2"><p className="text-xs font-semibold">Quantities</p>{PHOTO_SIZES.map((size) => <div key={size.id} className="flex items-center justify-between rounded border border-line px-3 py-2 text-xs"><span>{size.label}<small className="ml-2 text-muted-foreground">{size.widthMm} × {size.heightMm} mm</small></span><div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => setMixQuantities((quantities) => ({ ...quantities, [size.id]: Math.max(0, (quantities[size.id] ?? 0) - 1) }))}>−</Button><b className="min-w-6 text-center">{mixQuantities[size.id] ?? 0}</b><Button variant="outline" size="sm" onClick={() => setMixQuantities((quantities) => ({ ...quantities, [size.id]: Math.min(99, (quantities[size.id] ?? 0) + 1) }))}>+</Button></div></div>)}</div> : <div className="space-y-2"><p className="text-xs font-semibold">Photo size</p><div className="grid grid-cols-2 gap-2">{PHOTO_SIZES.map((size) => <button key={size.id} type="button" onClick={() => setPhotoSizeId(size.id)} className={`rounded border px-3 py-2 text-left text-xs ${photoSizeId === size.id ? "border-primary bg-primary/10" : "border-line"}`}><span>{size.label}</span><small className="block text-muted-foreground">{size.widthMm} × {size.heightMm} mm</small></button>)}</div></div>}<div className="flex gap-2"><Button className="flex-1" variant={!landscape ? "secondary" : "outline"} onClick={() => setLandscape(false)}>Portrait</Button><Button className="flex-1" variant={landscape ? "secondary" : "outline"} onClick={() => setLandscape(true)}>Landscape</Button></div><div className="space-y-2">{PAPER_SIZES.filter((paperOption) => ["4r", "5r", "a4", "letter"].includes(paperOption.id)).map((paperOption) => <button key={paperOption.id} type="button" onClick={() => setPaperId(paperOption.id)} className={`flex w-full items-center justify-between rounded border px-3 py-2 text-left text-xs ${paperId === paperOption.id ? "border-primary bg-primary/10" : "border-line"}`}><span>{paperOption.label}<small className="ml-2 text-muted-foreground">{paperOption.widthMm} × {paperOption.heightMm} mm</small></span><b>{maxCopies(orientedPaper(paperOption, landscape ? "landscape" : "portrait").widthMm, orientedPaper(paperOption, landscape ? "landscape" : "portrait").heightMm, photoWidthMm, photoHeightMm, marginMm, gapMm)} max</b></button>)}</div>{!mixSizes && <><div className="flex items-center justify-center gap-4"><Button variant="outline" onClick={() => setCopies((value) => Math.max(1, value - 1))}>−</Button><strong className="min-w-12 text-center text-3xl text-primary">{copies}</strong><Button variant="outline" onClick={() => setCopies((value) => Math.min(maximum, value + 1))}>+</Button></div><p className="text-center text-[11px] text-muted-foreground">{photoSize.label} · {photoWidthMm} × {photoHeightMm} mm · Maximum {maximum}</p></>}<div className="space-y-2"><p className="text-xs font-semibold">Spacing</p><label className="flex items-center gap-3 text-xs"><span className="w-14">Gap</span><Slider value={[gapMm]} min={0} max={10} step={0.5} onValueChange={(value) => setGapMm(value[0])} aria-label="Gap" /><b>{gapMm} mm</b></label><label className="flex items-center gap-3 text-xs"><span className="w-14">Margin</span><Slider value={[marginMm]} min={0} max={15} step={0.5} onValueChange={(value) => setMarginMm(value[0])} aria-label="Margin" /><b>{marginMm} mm</b></label></div><label className="flex items-center gap-3 rounded border border-line bg-background p-3 text-sm"><input type="checkbox" checked={cutMarks} onChange={(event) => setCutMarks(event.target.checked)} /><span><b>Cutting marks</b><small className="block text-xs text-muted-foreground">Corner guides for trimming</small></span></label></section>}
+        {activeStep === 2 && <section className="space-y-2 rounded border border-line bg-paper p-5"><h2 className="mb-3 text-sm font-bold">5. Print</h2><p className="flex justify-between text-xs"><span>Paper</span><b>{basePaper.label} · {landscape ? "Landscape" : "Portrait"}</b></p><p className="flex justify-between text-xs"><span>Photos</span><b>{totalPhotos}</b></p><Button className="mt-3 w-full" disabled={!finalUrl || !totalPhotos} onClick={printPreview}><Printer className="mr-2 h-4 w-4" />Print Preview & Print</Button><div className="flex gap-2"><Button className="flex-1" variant="outline" disabled={!finalUrl || !totalPhotos} onClick={downloadPng}><Download className="mr-1 h-4 w-4" />PNG 300 DPI</Button><Button className="flex-1" variant="outline" disabled={!finalUrl || !totalPhotos} onClick={() => void downloadPdf()}><Download className="mr-1 h-4 w-4" />PDF</Button></div></section>}
+        <div className="flex gap-2"><Button className="flex-1" variant="outline" disabled={activeStep === 1} onClick={() => setActiveStep((value) => value - 1)}>Back</Button>{activeStep < 2 && <Button className="flex-1" disabled={activeStep === 1 && !imageSrc} onClick={() => setActiveStep((value) => value + 1)}>Next</Button>}</div>
       </aside>
-      <section className="rounded border border-line bg-[#f4f6f9] p-5"><div className="mb-4 flex flex-wrap gap-4 text-xs text-muted-foreground"><span><b className="text-foreground">{totalPhotos}</b> photos</span><span>{basePaper.label}</span><span>{paper.widthMm.toFixed(1)} × {paper.heightMm.toFixed(1)} mm</span></div><div className="flex flex-wrap items-start justify-center gap-8"><div className="text-center"><p className="mb-2 text-xs font-bold">Full print sheet</p><div className="overflow-auto rounded bg-white p-3 shadow-sm"><div className="relative mx-auto bg-white" style={{ width: `${paper.widthMm}mm`, height: `${paper.heightMm}mm` }}>{cells.map((cell) => <div key={cell.id} className="absolute overflow-hidden border border-black" style={{ left: `${cell.xMm}mm`, top: `${cell.yMm}mm`, width: `${cell.widthMm}mm`, height: `${cell.heightMm}mm` }}>{finalUrl && <img src={finalUrl} alt="" className="h-full w-full object-cover" />}</div>)}</div></div><p className="mt-2 text-[11px] text-muted-foreground">{totalPhotos} photos · drag position is controlled by the crop tool</p></div></div></section>
+      <section className="rounded border border-line bg-[#f4f6f9] p-5"><div className="mb-4 flex flex-wrap gap-4 text-xs text-muted-foreground"><span><b className="text-foreground">{totalPhotos}</b> photos</span><span>{basePaper.label}</span><span>{paper.widthMm.toFixed(1)} × {paper.heightMm.toFixed(1)} mm</span></div><div className="flex flex-wrap items-start justify-center gap-8"><div className="text-center"><p className="mb-2 text-xs font-bold">Full print sheet</p><div className="overflow-auto rounded bg-white p-3 shadow-sm"><div className="relative mx-auto bg-white" style={{ width: `${paper.widthMm}mm`, height: `${paper.heightMm}mm` }}>{cells.map((cell) => <React.Fragment key={cell.id}><div className="absolute overflow-hidden border border-black" style={{ left: `${cell.xMm}mm`, top: `${cell.yMm}mm`, width: `${cell.widthMm}mm`, height: `${cell.heightMm}mm` }}>{finalUrl && <img src={finalUrl} alt="" className="h-full w-full object-cover" style={{ objectFit: "cover", objectPosition: "center" }} />}</div>{cutMarks && <div className="pointer-events-none absolute" style={{ left: `${cell.xMm}mm`, top: `${cell.yMm}mm`, width: `${cell.widthMm}mm`, height: `${cell.heightMm}mm` }}><span className="absolute bg-black" style={{ left: "-3mm", top: 0, width: "3mm", height: "0.2mm" }} /><span className="absolute bg-black" style={{ left: 0, top: "-3mm", width: "0.2mm", height: "3mm" }} /><span className="absolute bg-black" style={{ right: "-3mm", top: 0, width: "3mm", height: "0.2mm" }} /><span className="absolute bg-black" style={{ right: 0, top: "-3mm", width: "0.2mm", height: "3mm" }} /><span className="absolute bg-black" style={{ left: "-3mm", bottom: 0, width: "3mm", height: "0.2mm" }} /><span className="absolute bg-black" style={{ left: 0, bottom: "-3mm", width: "0.2mm", height: "3mm" }} /><span className="absolute bg-black" style={{ right: "-3mm", bottom: 0, width: "3mm", height: "0.2mm" }} /><span className="absolute bg-black" style={{ right: 0, bottom: "-3mm", width: "0.2mm", height: "3mm" }} /></div>}</React.Fragment>)}</div></div><p className="mt-2 text-[11px] text-muted-foreground">{totalPhotos} photos · drag position is controlled by the crop tool</p></div></div></section>
     </div>
   </main>;
 }

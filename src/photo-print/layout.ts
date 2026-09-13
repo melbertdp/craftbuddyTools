@@ -21,6 +21,30 @@ export type SheetCell = {
   heightMm: number;
 };
 
+export type CropArea = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export function fitCropArea(area: CropArea, aspectRatio: number, imageWidth: number, imageHeight: number): CropArea {
+  let width = area.width;
+  let height = area.height;
+  if (width / height > aspectRatio) width = height * aspectRatio;
+  else height = width / aspectRatio;
+  width = Math.min(width, imageWidth);
+  height = Math.min(height, imageHeight);
+  const centerX = area.x + area.width / 2;
+  const centerY = area.y + area.height / 2;
+  return {
+    x: Math.max(0, Math.min(imageWidth - width, centerX - width / 2)),
+    y: Math.max(0, Math.min(imageHeight - height, centerY - height / 2)),
+    width,
+    height,
+  };
+}
+
 export const PHOTO_SIZES: readonly PhotoSize[] = [
   { id: "standard", label: "Standard", widthMm: 31, heightMm: 41 },
   { id: "1x1in", label: "1 × 1 in", widthMm: 25.4, heightMm: 25.4 },
@@ -51,28 +75,55 @@ export function packPhotoItems(
   marginMm = 0,
   gapMm = 0,
 ): SheetCell[] {
-  const right = paperWidthMm - marginMm;
-  const bottom = paperHeightMm - marginMm;
-  const rows: { x: number; y: number; height: number }[] = [];
+  const innerWidth = Math.max(0, paperWidthMm - marginMm * 2);
+  const innerHeight = Math.max(0, paperHeightMm - marginMm * 2);
+  const items = requests
+    .flatMap((request) => Array.from({ length: Math.max(0, Math.floor(request.quantity)) }, () => request))
+    .sort((a, b) => b.heightMm - a.heightMm || b.widthMm - a.widthMm || b.widthMm * b.heightMm - a.widthMm * a.heightMm);
+
+  type Column = { x: number; width: number; usedHeight: number };
+  type Shelf = { y: number; height: number; cursorX: number; columns: Column[] };
+
+  const shelves: Shelf[] = [];
   const cells: SheetCell[] = [];
   let index = 0;
 
-  for (const request of [...requests].sort((a, b) => b.widthMm * b.heightMm - a.widthMm * a.heightMm)) {
-    for (let copy = 0; copy < Math.max(0, Math.floor(request.quantity)); copy += 1) {
-      if (request.widthMm > right - marginMm || request.heightMm > bottom - marginMm) continue;
-      let row = rows.find((candidate) => candidate.x + request.widthMm <= right + 1e-6);
-      if (!row) {
-        const y = rows.length ? rows[rows.length - 1].y + rows[rows.length - 1].height + gapMm : marginMm;
-        if (y + request.heightMm > bottom + 1e-6) continue;
-        row = { x: marginMm, y, height: request.heightMm };
-        rows.push(row);
+  for (const item of items) {
+    if (item.widthMm > innerWidth + 1e-6 || item.heightMm > innerHeight + 1e-6) continue;
+
+    let placed = false;
+    for (const shelf of shelves) {
+      if (item.heightMm > shelf.height + 1e-6) continue;
+      for (const column of shelf.columns) {
+        if (item.widthMm > column.width + 1e-6) continue;
+        const offsetY = column.usedHeight > 0 ? column.usedHeight + gapMm : 0;
+        if (offsetY + item.heightMm <= shelf.height + 1e-6) {
+          cells.push({ id: `${item.photoTypeId}-${index}`, photoTypeId: item.photoTypeId, xMm: marginMm + column.x, yMm: marginMm + shelf.y + offsetY, widthMm: item.widthMm, heightMm: item.heightMm });
+          column.usedHeight = offsetY + item.heightMm;
+          index += 1;
+          placed = true;
+          break;
+        }
       }
-      cells.push({ id: `${request.photoTypeId}-${index}`, photoTypeId: request.photoTypeId, xMm: row.x, yMm: row.y, widthMm: request.widthMm, heightMm: request.heightMm });
-      row.x += request.widthMm + gapMm;
-      row.height = Math.max(row.height, request.heightMm);
-      index += 1;
+      if (placed) break;
+      if (shelf.cursorX + item.widthMm <= innerWidth + 1e-6) {
+        shelf.columns.push({ x: shelf.cursorX, width: item.widthMm, usedHeight: item.heightMm });
+        cells.push({ id: `${item.photoTypeId}-${index}`, photoTypeId: item.photoTypeId, xMm: marginMm + shelf.cursorX, yMm: marginMm + shelf.y, widthMm: item.widthMm, heightMm: item.heightMm });
+        shelf.cursorX += item.widthMm + gapMm;
+        index += 1;
+        placed = true;
+        break;
+      }
     }
+    if (placed) continue;
+
+    const y = shelves.length ? shelves[shelves.length - 1].y + shelves[shelves.length - 1].height + gapMm : 0;
+    if (y + item.heightMm > innerHeight + 1e-6) continue;
+    shelves.push({ y, height: item.heightMm, cursorX: item.widthMm + gapMm, columns: [{ x: 0, width: item.widthMm, usedHeight: item.heightMm }] });
+    cells.push({ id: `${item.photoTypeId}-${index}`, photoTypeId: item.photoTypeId, xMm: marginMm, yMm: marginMm + y, widthMm: item.widthMm, heightMm: item.heightMm });
+    index += 1;
   }
+
   return cells;
 }
 
