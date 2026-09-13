@@ -1,5 +1,5 @@
-const CACHE_NAME = "craftbuddy-v2";
-const APP_SHELL = ["/", "/pdf", "/icon.svg", "/icon-192.svg", "/icon-512.svg", "/manifest.webmanifest"];
+const CACHE_NAME = "craftbuddy-v3";
+const APP_SHELL = ["/", "/pdf", "/icon-192.png", "/icon-512.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -38,7 +38,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (url.pathname.startsWith("/_next/static/") || url.pathname === "/icon.svg") {
+  if (url.pathname.startsWith("/_next/static/") || url.pathname === "/icon-192.png" || url.pathname === "/icon-512.png") {
     event.respondWith(
       caches.match(request).then(
         (cached) =>

@@ -10,10 +10,10 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/icon-192.svg", type: "image/svg+xml", sizes: "192x192" },
-      { url: "/icon-512.svg", type: "image/svg+xml", sizes: "512x512" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
     ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
     capable: true,
@@ -30,6 +30,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'window.addEventListener("beforeinstallprompt", function (event) { event.preventDefault(); window.__craftBuddyInstallPrompt = event; });',
+          }}
+        />
         {children}
         <InstallAppButton />
         <ServiceWorkerRegistrar />

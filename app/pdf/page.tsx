@@ -3,10 +3,11 @@ import { BrandHeader } from "@/components/BrandHeader";
 import { ToolsNav } from "@/components/ToolsNav";
 import { ToolCard } from "@/pdf/components/common/ToolCard";
 import { PDF_TOOL_CATEGORIES } from "@/pdf/tools";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export default function PdfHomePage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <BrandHeader>
         <div className="flex items-center gap-5">
           <ToolsNav className="hidden md:flex" />
@@ -17,7 +18,7 @@ export default function PdfHomePage() {
         </div>
       </BrandHeader>
 
-      <main className="mx-auto w-full max-w-[1240px] px-6 py-10">
+      <main className="mx-auto w-full max-w-[1240px] flex-1 px-6 py-10">
         <div className="max-w-[720px]">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
             Private PDF platform
@@ -57,6 +58,7 @@ export default function PdfHomePage() {
           ))}
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

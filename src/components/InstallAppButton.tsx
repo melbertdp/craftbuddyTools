@@ -9,17 +9,29 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
 
+declare global {
+  interface Window {
+    __craftBuddyInstallPrompt?: BeforeInstallPromptEvent;
+  }
+}
+
 export function InstallAppButton() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
+    if (window.__craftBuddyInstallPrompt) {
+      setInstallPrompt(window.__craftBuddyInstallPrompt);
+    }
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
-      setInstallPrompt(event as BeforeInstallPromptEvent);
+      const prompt = event as BeforeInstallPromptEvent;
+      window.__craftBuddyInstallPrompt = prompt;
+      setInstallPrompt(prompt);
     };
     const handleAppInstalled = () => {
       setHidden(true);
+      window.__craftBuddyInstallPrompt = undefined;
       setInstallPrompt(null);
     };
 
@@ -43,7 +55,7 @@ export function InstallAppButton() {
 
   return (
     <aside className="fixed inset-x-4 top-4 z-50 mx-auto flex max-w-[430px] items-center gap-3 rounded-2xl border border-[#bcd5ff] bg-[#fff] px-4 py-3 shadow-[0_12px_30px_rgba(31,52,87,0.16)] sm:inset-x-auto sm:right-8 sm:ml-auto sm:max-w-[430px]">
-      <img src="/icon.svg" alt="" className="size-12 shrink-0 rounded-xl" />
+      <img src="/icon-192.png" alt="" className="size-12 shrink-0 rounded-xl object-contain" />
       <div className="min-w-0 flex-1">
         <strong className="block text-sm text-[#172238]">Install CraftBuddy</strong>
         <span className="block text-xs text-[#718096]">Get faster access anytime!</span>

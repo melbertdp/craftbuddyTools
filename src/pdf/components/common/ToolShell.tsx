@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrandHeader } from "@/components/BrandHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import { ToolsNav } from "@/components/ToolsNav";
 
 interface ToolShellProps {
@@ -55,17 +55,7 @@ export function ToolShell({
         {children}
       </main>
 
-      <footer className="border-t border-border">
-        <div
-          className={cn(
-            "mx-auto flex w-full items-center gap-2 px-4 py-4 text-xs text-muted-foreground sm:px-6",
-            wide ? "max-w-[1600px]" : "max-w-[1240px]",
-          )}
-        >
-          <ShieldCheck className="size-3.5 text-success" aria-hidden />
-          <span>Your documents stay on your device. Processing happens directly in your browser.</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

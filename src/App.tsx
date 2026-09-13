@@ -23,6 +23,7 @@ import { MarketBenchmarkPage } from "./components/market-benchmark/MarketBenchma
 import QRDesigner from "./qr/QRDesigner";
 import { LandingPage } from "./components/landing/LandingPage";
 import { BrandHeader } from "./components/BrandHeader";
+import { SiteFooter } from "./components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -106,9 +107,7 @@ function Layout() {
         </nav>
       </BrandHeader>
       <Outlet />
-      <footer className="mx-auto w-full max-w-[1240px] px-6 py-8 text-sm text-muted-foreground sm:px-8 lg:px-10">
-        Private by design. Your files are processed in this browser.
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
@@ -349,6 +348,12 @@ function PrintEstimator() {
         <Link className="text-[13px] text-muted-foreground no-underline max-[760px]:mt-5 max-[760px]:inline-block" to="/profiles">
           Manage profiles ↗
         </Link>
+      </div>
+      <div className="mb-[26px] flex items-start gap-3 border border-[#e8d9a8] bg-[#fdf8e7] px-4 py-3 max-[760px]:mb-5">
+        <span className="mt-px rounded-sm bg-[#b8860b] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">Beta</span>
+        <p className="text-[13px] leading-[1.5] text-[#7a5c00]">
+          This estimator is still in beta and actively being refined. Pricing results are a guide only — double-check your figures before quoting.
+        </p>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_350px] items-start gap-[22px] max-[760px]:grid-cols-1">
         <section className="flex flex-col gap-[14px]">
