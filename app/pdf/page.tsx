@@ -1,5 +1,6 @@
 import { Lock } from "lucide-react";
 import { BrandHeader } from "@/components/BrandHeader";
+import { ToolsNav } from "@/components/ToolsNav";
 import { ToolCard } from "@/pdf/components/common/ToolCard";
 import { PDF_TOOL_CATEGORIES } from "@/pdf/tools";
 
@@ -7,10 +8,13 @@ export default function PdfHomePage() {
   return (
     <div className="min-h-screen bg-background">
       <BrandHeader>
+        <div className="flex items-center gap-5">
+          <ToolsNav className="hidden md:flex" />
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             <Lock className="size-3" aria-hidden />
             Local processing
           </span>
+        </div>
       </BrandHeader>
 
       <main className="mx-auto w-full max-w-[1240px] px-6 py-10">

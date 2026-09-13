@@ -337,7 +337,7 @@ function PrintEstimator() {
     window.localStorage.setItem("cb-profile", JSON.stringify(next));
   }
   return (
-    <main className="mx-auto w-full max-w-[1184px] px-7 py-[62px] pb-[100px] max-[760px]:px-5 max-[760px]:py-12 max-[760px]:pb-[70px]">
+    <main className="mx-auto w-full max-w-[1184px] px-7 py-[40px] pb-[100px] max-[760px]:px-5 max-[760px]:py-12 max-[760px]:pb-[70px]">
       <div className="mb-[38px] flex items-end justify-between max-[760px]:block">
         <div>
           <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Production / print job</div>

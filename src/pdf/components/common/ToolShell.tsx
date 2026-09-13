@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrandHeader } from "@/components/BrandHeader";
+import { ToolsNav } from "@/components/ToolsNav";
 
 interface ToolShellProps {
   title: string;
@@ -39,6 +40,7 @@ export function ToolShell({
               <p className="hidden truncate text-xs text-muted-foreground md:block">{description}</p>
             )}
           </div>
+          <ToolsNav className="hidden border-l border-[rgba(56,82,60,0.16)] pl-5 lg:flex" />
           {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
       </BrandHeader>
