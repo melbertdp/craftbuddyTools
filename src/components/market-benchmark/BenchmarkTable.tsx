@@ -1,0 +1,19 @@
+import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { PriceRange } from "./PriceRange";
+import type { BenchmarkRecord } from "./data";
+
+export type SortKey = "category" | "service" | "size" | "marketLow" | "marketHigh" | "unit";
+
+const badgeClass: Record<string, string> = {
+  "Document Printing": "bg-[#e1e9da] text-[#496341]", "Photocopy / Xerox": "bg-[#e8eee4] text-[#526c50]", "Photo Printing": "bg-[#f2e8d3] text-[#8a682e]", "Rush ID": "bg-[#f4ded2] text-[#92543d]", "Lamination": "bg-[#e1e8ed] text-[#476273]", "Scanning": "bg-[#e6e3ef] text-[#635c83]", "Sticker / Vinyl": "bg-[#f0e4dc] text-[#8e5b40]", "Photo Cards": "bg-[#ebe4d5] text-[#806530]", Souvenirs: "bg-[#e6e8d9] text-[#687044]",
+};
+
+function SortButton({ label, column, sortKey, direction, onSort }: { label: string; column: SortKey; sortKey: SortKey; direction: "asc" | "desc"; onSort: (key: SortKey) => void }) {
+  const active = sortKey === column;
+  return <button type="button" onClick={() => onSort(column)} className="inline-flex items-center gap-1 text-left font-bold uppercase tracking-[0.08em] text-[#66736A] hover:text-[#20372B]">{label}{active ? direction === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" /> : <ChevronsUpDown className="size-3 text-[#a0aaa0]" />}</button>;
+}
+
+export function BenchmarkTable({ records, sortKey, direction, onSort }: { records: BenchmarkRecord[]; sortKey: SortKey; direction: "asc" | "desc"; onSort: (key: SortKey) => void }) {
+  return <div className="overflow-x-auto"><table className="w-full min-w-[900px] border-collapse text-sm"><thead className="sticky top-0 z-10 bg-[#eef3ea]"><tr className="border-b border-[rgba(53,78,57,0.16)]"><th className="sticky left-0 z-20 bg-[#eef3ea] px-4 py-3 text-left"><SortButton label="Category" column="category" {...{ sortKey, direction, onSort }} /></th><th className="px-4 py-3 text-left"><SortButton label="Service / Variant" column="service" {...{ sortKey, direction, onSort }} /></th><th className="px-4 py-3 text-left"><SortButton label="Size" column="size" {...{ sortKey, direction, onSort }} /></th><th className="px-4 py-3 text-right"><SortButton label="Market Low" column="marketLow" {...{ sortKey, direction, onSort }} /></th><th className="px-4 py-3 text-right"><SortButton label="Market High" column="marketHigh" {...{ sortKey, direction, onSort }} /></th><th className="px-4 py-3 text-left"><SortButton label="Unit" column="unit" {...{ sortKey, direction, onSort }} /></th><th className="w-[27%] px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-[#66736A]">Notes</th></tr></thead><tbody>{records.map((record, index) => <tr key={record.id} className={`border-b border-[rgba(53,78,57,0.09)] transition-colors hover:bg-[#f0f5ed] ${index % 2 ? "bg-[#fafcf9]" : "bg-white"}`}><td className={`sticky left-0 z-[1] px-4 py-2.5 ${index % 2 ? "bg-[#fafcf9]" : "bg-white"}`}><Badge className={badgeClass[record.category]}>{record.category}</Badge></td><td className="px-4 py-2.5 font-medium text-[#20372B]">{record.service}</td><td className="px-4 py-2.5 text-[#526057]">{record.size === "—" ? "" : record.size}</td><td className="px-4 py-2.5 text-right text-[#20372B]"><span className="tabular-nums">₱{record.marketLow.toLocaleString("en-PH")}</span></td><td className="px-4 py-2.5 text-right text-[#20372B]"><span className="tabular-nums">₱{record.marketHigh.toLocaleString("en-PH")}</span></td><td className="px-4 py-2.5 whitespace-nowrap text-xs text-[#526057]">{record.unit}</td><td className="px-4 py-2.5 text-xs leading-relaxed text-[#78847b]">{record.notes || "—"}</td></tr>)}</tbody></table>{records.length === 0 && <div className="px-6 py-16 text-center"><p className="font-semibold text-[#20372B]">No benchmarks found</p><p className="mt-1 text-sm text-[#66736A]">Try a different search term or clear the filters.</p></div>}</div>;
+}

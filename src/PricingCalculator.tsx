@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, PackagePlus } from "lucide-react";
 import { calculatePricing, type CalculationMethod } from "./lib/calculator";
 import { cn } from "@/lib/utils";
 import { CostBreakdown } from "./components/cost-estimator/CostBreakdown";
 import { CostDonutChart } from "./components/cost-estimator/CostDonutChart";
+import { MaterialsModal } from "./components/cost-estimator/MaterialsModal";
+import { loadMaterials, saveMaterials } from "./components/cost-estimator/material-library";
 import {
   LaborSection,
   MaterialsSection,
@@ -20,6 +22,7 @@ import {
   nextId,
   numberValue,
   type LaborRow,
+  type MaterialRecord,
   type MaterialRow,
   type OtherRow,
 } from "./components/cost-estimator/shared";
@@ -40,6 +43,14 @@ export function PricingCalculator() {
   const [otherRows, setOtherRows] = useState(() =>
     createOtherCosts(INITIAL_ROWS),
   );
+  const [materials, setMaterials] = useState<MaterialRecord[]>(() =>
+    loadMaterials(),
+  );
+  const [materialsOpen, setMaterialsOpen] = useState(false);
+
+  useEffect(() => {
+    saveMaterials(materials);
+  }, [materials]);
 
   const materialTotal = materialRows.reduce(
     (sum, row) => sum + numberValue(row.quantity) * numberValue(row.unitCost),
@@ -276,21 +287,32 @@ export function PricingCalculator() {
             aria-labelledby="product-costs-heading"
             className="rounded-[18px] border border-[rgba(53,78,57,0.14)] bg-[#FBFCF8] p-5 shadow-[0_8px_24px_rgba(36,56,41,0.05)] lg:p-6"
           >
-            <div>
-              <h2
-                id="product-costs-heading"
-                className="text-[22px] font-bold text-[#20372B]"
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h2
+                  id="product-costs-heading"
+                  className="text-[22px] font-bold text-[#20372B]"
+                >
+                  Product costs
+                </h2>
+                <p className="mt-1 text-sm text-[#66736A]">
+                  List the costs for each category below.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMaterialsOpen(true)}
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#2F463A] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(47,70,58,0.28)] transition-colors hover:bg-[#20372B] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#5d7052]/40 motion-reduce:transition-none"
               >
-                Product costs
-              </h2>
-              <p className="mt-1 text-sm text-[#66736A]">
-                List the costs for each category below.
-              </p>
+                <PackagePlus aria-hidden="true" className="size-4" />
+                Input materials
+              </button>
             </div>
             <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               <MaterialsSection
                 rows={materialRows}
                 total={materialTotal}
+                materials={materials}
                 onUpdate={updateMaterial}
                 onRemove={(id) =>
                   setMaterialRows((rows) =>
@@ -353,6 +375,13 @@ export function PricingCalculator() {
           </section>
         </div>
       </div>
+
+      <MaterialsModal
+        open={materialsOpen}
+        onOpenChange={setMaterialsOpen}
+        materials={materials}
+        onSave={setMaterials}
+      />
     </main>
   );
 }

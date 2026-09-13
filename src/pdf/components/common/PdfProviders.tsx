@@ -6,7 +6,6 @@ import { disposeAllPdfDocuments } from "@/pdf/core/pdfjs";
 import { thumbnailStore } from "@/pdf/core/thumbnail-store";
 import { terminatePdfWorker } from "@/pdf/workers/client";
 import { JobProgress } from "./JobProgress";
-import { ServiceWorkerRegistrar } from "./ServiceWorkerRegistrar";
 
 export function PdfProviders({ children }: { children: React.ReactNode }) {
   React.useEffect(
@@ -23,7 +22,6 @@ export function PdfProviders({ children }: { children: React.ReactNode }) {
     <TooltipProvider delayDuration={200}>
       {children}
       <JobProgress />
-      <ServiceWorkerRegistrar />
     </TooltipProvider>
   );
 }

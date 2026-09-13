@@ -4,13 +4,23 @@ import { CostTable, type CostColumn } from "./CostTable";
 import {
   COST_ACCENTS,
   type LaborRow,
+  type MaterialRecord,
   type MaterialRow,
   type OtherRow,
+  materialCostPerUnit,
   numberValue,
 } from "./shared";
 
-const MATERIAL_COLUMNS: CostColumn[] = [
-  { key: "name", label: "Material", kind: "text", placeholder: "Material name" },
+const materialColumns = (materials: MaterialRecord[]): CostColumn[] => [
+  {
+    key: "name",
+    label: "Material",
+    kind: "combo",
+    placeholder: "Select or type",
+    options: Array.from(
+      new Set(materials.map((material) => material.name).filter(Boolean)),
+    ),
+  },
   { key: "quantity", label: "Qty", kind: "number", width: 42, align: "right", placeholder: "0" },
   { key: "unit", label: "Unit", kind: "text", width: 44, placeholder: "pc" },
   { key: "unitCost", label: "Unit cost", kind: "money", width: 76, align: "right" },
@@ -37,12 +47,14 @@ const OTHER_COLUMNS: CostColumn[] = [
 export function MaterialsSection({
   rows,
   total,
+  materials,
   onUpdate,
   onRemove,
   onAdd,
 }: {
   rows: MaterialRow[];
   total: number;
+  materials: MaterialRecord[];
   onUpdate: (id: number, patch: Partial<MaterialRow>) => void;
   onRemove: (id: number) => void;
   onAdd: () => void;
@@ -58,9 +70,27 @@ export function MaterialsSection({
     >
       <CostTable
         rows={rows}
-        columns={MATERIAL_COLUMNS}
+        columns={materialColumns(materials)}
         removeLabel="Remove material"
-        onUpdate={(id, key, value) => onUpdate(id, { [key]: value } as Partial<MaterialRow>)}
+        onUpdate={(id, key, value) => {
+          if (key === "name") {
+            const match = materials.find(
+              (material) => material.name === value,
+            );
+            if (match) {
+              onUpdate(id, {
+                name: match.name,
+                quantity: "1",
+                unit: match.unit,
+                unitCost: materialCostPerUnit(match).toFixed(2),
+              });
+            } else {
+              onUpdate(id, { name: value, unitCost: "0" });
+            }
+            return;
+          }
+          onUpdate(id, { [key]: value } as Partial<MaterialRow>);
+        }}
         onRemove={onRemove}
         computeTotal={(row) =>
           numberValue(row.quantity) * numberValue(row.unitCost)

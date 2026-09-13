@@ -1,0 +1,3 @@
+export function BenchmarkDisclaimer() {
+  return <section className="border-t border-[rgba(53,78,57,0.14)] pt-7" aria-labelledby="benchmark-disclaimer"><h2 id="benchmark-disclaimer" className="text-sm font-bold text-[#20372B]">Market Benchmark Disclaimer</h2><p className="mt-2 max-w-[900px] text-xs leading-relaxed text-[#66736A]">These price ranges are provided for reference and comparison purposes only. They are based on observed market pricing and are not recommended selling prices. Actual prices may vary depending on location, materials, equipment, print quality, quantity, finishing, and other business costs. Always use your own calculated costs and desired margin when setting your selling price.</p></section>;
+}

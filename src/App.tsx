@@ -19,6 +19,7 @@ import {
   type PrintProfile,
 } from "./lib/calculator";
 import { PricingCalculator } from "./PricingCalculator";
+import { MarketBenchmarkPage } from "./components/market-benchmark/MarketBenchmarkPage";
 import QRDesigner from "./qr/QRDesigner";
 import { LandingPage } from "./components/landing/LandingPage";
 import { BrandHeader } from "./components/BrandHeader";
@@ -84,6 +85,7 @@ function Layout() {
             ["/cost-estimator", "Cost estimator"],
             ["/qr-generator", "QR generator"],
             ["/profiles", "Profiles"],
+            ["/market-benchmark", "Market benchmark"],
           ].map(([to, label]) => (
             <Button key={to} className="h-auto rounded-none px-0 py-0 text-sm" variant="ghost" asChild>
               <NavLink
@@ -878,6 +880,7 @@ export default function App() {
           <Route path="/cost-estimator" element={<PricingCalculator />} />
           <Route path="/qr-generator" element={<QRDesigner />} />
           <Route path="/profiles" element={<Profiles />} />
+          <Route path="/market-benchmark" element={<MarketBenchmarkPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

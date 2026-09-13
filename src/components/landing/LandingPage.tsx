@@ -54,7 +54,22 @@ const TOOLS: Tool[] = [
     illustration: <ProductCostIllustration />,
   },
   {
-    category: "03 / Creative",
+    category: "03 / Reference",
+    title: "Market price benchmark",
+    description:
+      "Compare common printing service prices against observed market ranges in the Philippines.",
+    cta: "Browse market prices",
+    href: "/market-benchmark",
+    theme: {
+      background: "bg-[#e8eee4]",
+      border: "border-[rgba(56,82,60,0.18)] hover:border-[rgba(56,82,60,0.36)]",
+      label: "text-[#4f6449]",
+      cta: "text-[#2f463a]",
+    },
+    illustration: <ProductCostIllustration />,
+  },
+  {
+    category: "04 / Creative",
     title: "QR code designer",
     description:
       "Create branded QR codes locally with flexible styling, logo support, and production-ready exports.",
@@ -69,7 +84,7 @@ const TOOLS: Tool[] = [
     illustration: <QrCodeIllustration />,
   },
   {
-    category: "04 / Documents",
+    category: "05 / Documents",
     title: "PDF tools",
     description:
       "Edit, sign, merge, split, convert, watermark, and compress PDFs. Every document stays on your device.",

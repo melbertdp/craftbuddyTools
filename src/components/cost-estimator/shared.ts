@@ -19,6 +19,43 @@ export type MaterialRow = {
   unitCost: string;
 };
 
+export type MaterialRecord = {
+  id: string;
+  name: string;
+  totalCost: string;
+  unit: string;
+  units: string;
+};
+
+export const MATERIAL_UNITS = [
+  "Unit",
+  "pc",
+  "sheet",
+  "roll",
+  "pack",
+  "bottle",
+  "box",
+  "yard",
+];
+
+export const materialCostPerUnit = (material: MaterialRecord) => {
+  const units = numberValue(material.units);
+  return units > 0 ? numberValue(material.totalCost) / units : 0;
+};
+
+export function createMaterialRecord(): MaterialRecord {
+  return {
+    id:
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `m-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name: "",
+    totalCost: "",
+    unit: "Unit",
+    units: "",
+  };
+}
+
 export type LaborRow = {
   id: number;
   description: string;

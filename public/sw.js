@@ -1,5 +1,5 @@
-const CACHE_NAME = "craftbuddy-pdf-v1";
-const APP_SHELL = ["/pdf", "/icon.svg", "/manifest.webmanifest"];
+const CACHE_NAME = "craftbuddy-v2";
+const APP_SHELL = ["/", "/pdf", "/icon.svg", "/icon-192.svg", "/icon-512.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
