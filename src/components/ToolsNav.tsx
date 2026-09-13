@@ -4,6 +4,7 @@ const OTHER_TOOLS = [
   { href: "/print-estimator", label: "Print estimator" },
   { href: "/cost-estimator", label: "Cost estimator" },
   { href: "/qr-generator", label: "QR generator" },
+  { href: "/id-photo-print", label: "ID photo print" },
   { href: "/profiles", label: "Profiles" },
 ];
 

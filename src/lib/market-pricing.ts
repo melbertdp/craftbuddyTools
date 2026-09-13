@@ -38,6 +38,7 @@ export function marketUnitPrice(input: {
       null
     );
   }
+  if (input.service !== "document_print") return null;
   const size =
     input.size === "short" || input.size === "long" || input.size === "A4"
       ? input.size

@@ -13,6 +13,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@origin-space/image-cropper": "^0.1.9",
     "@upstash/qstash": "^2.11.3",
     "@upstash/redis": "^1.38.4",
     "class-variance-authority": "^0.7.1",

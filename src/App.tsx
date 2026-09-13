@@ -23,6 +23,7 @@ import {
 import { PricingCalculator } from "./PricingCalculator";
 import { MarketBenchmarkPage } from "./components/market-benchmark/MarketBenchmarkPage";
 import QRDesigner from "./qr/QRDesigner";
+import PhotoIdPrintPage from "./photo-print/PhotoIdPrintPage";
 import { LandingPage } from "./components/landing/LandingPage";
 import { BrandHeader } from "./components/BrandHeader";
 import { SiteFooter } from "./components/SiteFooter";
@@ -87,6 +88,7 @@ function Layout() {
             ["/print-estimator", "Print estimator"],
             ["/cost-estimator", "Cost estimator"],
             ["/qr-generator", "QR generator"],
+            ["/id-photo-print", "ID photo print"],
             ["/profiles", "Profiles"],
             ["/market-benchmark", "Market benchmark"],
           ].map(([to, label]) => (
@@ -865,6 +867,7 @@ export default function App() {
           <Route path="/print-estimator" element={<PrintEstimator />} />
           <Route path="/cost-estimator" element={<PricingCalculator />} />
           <Route path="/qr-generator" element={<QRDesigner />} />
+          <Route path="/id-photo-print" element={<PhotoIdPrintPage />} />
           <Route path="/profiles" element={<Profiles />} />
           <Route path="/market-benchmark" element={<MarketBenchmarkPage />} />
         </Route>
