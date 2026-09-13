@@ -1,5 +1,20 @@
-const CACHE_NAME = "craftbuddy-v3";
+const CACHE_NAME = "craftbuddy-v4";
 const APP_SHELL = ["/", "/pdf", "/icon-192.png", "/icon-512.png", "/manifest.webmanifest"];
+
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const response = await fetch(request);
+    if (response && response.ok) {
+      cache.put(request, response.clone()).catch(() => undefined);
+    }
+    return response;
+  } catch (error) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    throw error;
+  }
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -27,28 +42,17 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => undefined);
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached ?? caches.match("/pdf"))),
+      networkFirst(request).catch(() => caches.match("/").then((cached) => cached ?? caches.match("/pdf"))),
     );
     return;
   }
 
-  if (url.pathname.startsWith("/_next/static/") || url.pathname === "/icon-192.png" || url.pathname === "/icon-512.png") {
-    event.respondWith(
-      caches.match(request).then(
-        (cached) =>
-          cached ??
-          fetch(request).then((response) => {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => undefined);
-            return response;
-          }),
-      ),
-    );
+  if (
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname === "/icon-192.png" ||
+    url.pathname === "/icon-512.png" ||
+    url.pathname === "/apple-icon.png"
+  ) {
+    event.respondWith(networkFirst(request));
   }
 });

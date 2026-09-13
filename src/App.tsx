@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BrowserRouter, Link, NavLink, Outlet, Route, Routes } from "react-router-dom";
+import { Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   analyzeImage,
   analyzePdf,
@@ -156,7 +158,6 @@ function PrintEstimator() {
   const [processing, setProcessing] = useState(false);
   const [artworkFile, setArtworkFile] = useState<File>();
   const [aiBusy, setAiBusy] = useState(false);
-  const [aiAssistEnabled, setAiAssistEnabled] = useState(false);
   const [aiCooldown, setAiCooldown] = useState(() => {
     try {
       const until = Number(localStorage.getItem("cb-ai-cooldown-until"));
@@ -247,14 +248,6 @@ function PrintEstimator() {
     );
     return () => window.clearInterval(timer);
   }, [aiCooldown]);
-  useEffect(() => {
-    try {
-      const enabled = localStorage.getItem("cb-ai-assist-enabled");
-      if (enabled != null) setAiAssistEnabled(enabled === "true");
-    } catch {
-      // Local storage is optional.
-    }
-  }, []);
   async function handleFile(file: File | undefined) {
     if (!file) return;
     setError("");
@@ -265,7 +258,7 @@ function PrintEstimator() {
     setAiResult("");
   }
   async function analyzeArtwork() {
-    if (!artworkFile || processing) return;
+    if (!artworkFile || processing || aiBusy) return;
     setError("");
     setProcessing(true);
     setProgress(0);
@@ -277,7 +270,6 @@ function PrintEstimator() {
           : await analyzeImage(artworkFile);
       setPages(next);
       setProgress(100);
-      if (aiAssistEnabled) await runAiAssist();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not analyze this file.");
       setPages([]);
@@ -369,26 +361,6 @@ function PrintEstimator() {
                 </span>
               )}
             </div>
-            <label className="my-[18px] mb-1 flex items-center justify-between gap-4 border border-[#cbd8c3] bg-[#f2f6ee] px-3.5 py-3">
-              <span className="flex flex-col gap-[3px]">
-                <strong>AI Assist</strong>
-                <small className="text-[11px] text-muted-foreground">
-                  {aiAssistEnabled
-                    ? "Analyze file also identifies the document"
-                    : "Manual file analysis only"}
-                </small>
-              </span>
-              <input
-                type="checkbox"
-                checked={aiAssistEnabled}
-                onChange={(event) => {
-                  const enabled = event.target.checked;
-                  setAiAssistEnabled(enabled);
-                  if (!enabled) setAiResult("");
-                  window.localStorage.setItem("cb-ai-assist-enabled", String(enabled));
-                }}
-              />
-            </label>
             <button
               className="flex min-h-[135px] w-full flex-col items-center justify-center gap-2 border border-dashed border-[#b7c7ad] bg-[#f2f6ee] text-[#2f3d32] disabled:opacity-75"
               onClick={() => inputRef.current?.click()}
@@ -414,64 +386,66 @@ function PrintEstimator() {
               onChange={(event) => handleFile(event.target.files?.[0])}
             />
             {error && <div className="mt-[14px] bg-[#f3e1dc] p-[11px] text-xs text-[#8b4b44]">{error}</div>}
-            {artworkFile && pages.length === 0 && !processing && (
-              <div className="mt-[14px] flex items-center gap-2 text-xs text-[#5f7d4f]">
+            {artworkFile && (
+              <div className="mt-[14px] flex flex-wrap items-center gap-2 text-xs text-[#5f7d4f]">
                 <span className="size-[7px] shrink-0 rounded-full bg-[#5f7d4f]" />
-                {fileName} is ready to analyze
+                {aiBusy
+                  ? "Identifying artwork with AI…"
+                  : processing
+                    ? "Analyzing artwork locally…"
+                    : pages.length > 0
+                      ? `${pages.length} page${pages.length === 1 ? "" : "s"} analyzed · rendered ink-load estimate`
+                      : `${fileName} is ready to analyze`}
                 <button
                   className="ml-0 border border-[#5d7052] bg-[#5d7052] px-3 py-2 text-xs font-bold text-[#f7faf4] hover:bg-[#4b5d42] disabled:cursor-not-allowed disabled:opacity-55"
                   onClick={analyzeArtwork}
-                  disabled={aiAssistEnabled && aiCooldown > 0}
+                  disabled={processing || aiBusy}
                 >
-                  {aiAssistEnabled && aiCooldown > 0
-                    ? `Analyze file (${aiCooldown}s)`
-                    : "Analyze file"}
+                  {pages.length > 0 ? "Re-analyze file" : "Analyze file"}
                 </button>
-                <button className="ml-auto border-0 bg-transparent text-xs text-muted-foreground underline"
-                  onClick={() => {
-                    setFileName("");
-                    setArtworkFile(undefined);
-                  }}
+                <button
+                  className="ml-0 border border-[#5d7052] bg-[#5d7052] px-3 py-2 text-xs font-bold text-[#f7faf4] hover:bg-[#4b5d42] disabled:cursor-not-allowed disabled:opacity-55"
+                  onClick={runAiAssist}
+                  disabled={processing || aiBusy || aiCooldown > 0}
                 >
-                  Remove
+                  {aiBusy
+                    ? "Identifying..."
+                    : aiCooldown > 0
+                      ? `Identify with AI (${aiCooldown}s)`
+                      : "Identify with AI"}
                 </button>
-              </div>
-            )}
-            {pages.length > 0 && (
-              <div className="mt-[14px] flex items-center gap-2 text-xs text-[#5f7d4f]">
-                <span className="size-[7px] shrink-0 rounded-full bg-[#5f7d4f]" />
-                {pages.length} page{pages.length === 1 ? "" : "s"} analyzed ·
-                rendered ink-load estimate{" "}
-                {aiAssistEnabled && (
-                  <button
-                    className="ml-0 border border-[#5d7052] bg-[#5d7052] px-3 py-2 text-xs font-bold text-[#f7faf4] hover:bg-[#4b5d42] disabled:cursor-not-allowed disabled:opacity-55"
-                    onClick={runAiAssist}
-                    disabled={
-                      aiBusy ||
-                      aiCooldown > 0 ||
-                      !artworkFile?.type.startsWith("image/")
-                    }
-                  >
-                    {aiBusy
-                      ? "Identifying..."
-                      : aiCooldown > 0
-                        ? `Identify with AI (${aiCooldown}s)`
-                        : "Identify with AI"}
-                  </button>
-                )}
-                <button className="ml-auto border-0 bg-transparent text-xs text-muted-foreground underline"
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="About AI identification"
+                        className="flex size-[34px] items-center justify-center text-[#5d7052] hover:text-[#4b5d42] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#5d7052]/30"
+                      >
+                        <Info className="size-4" aria-hidden />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[260px] text-pretty leading-[1.5]">
+                      Triggers an AI analysis. A rendered preview of your artwork is sent to the
+                      AI service to identify its content and colors. Runs are rate limited with a
+                      60-second cooldown.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <button className="ml-auto border-0 bg-transparent text-xs text-muted-foreground underline disabled:cursor-not-allowed disabled:opacity-55"
                   onClick={() => {
                     setPages([]);
                     setFileName("");
                     setArtworkFile(undefined);
                     setAiResult("");
                   }}
+                  disabled={processing || aiBusy}
                 >
                   Remove
                 </button>
               </div>
             )}
-            {aiAssistEnabled && aiResult && (
+            {aiResult && (
               <div className="mt-[14px] bg-[#f2f6ee] p-3 text-[13px] leading-[1.5] text-[#2f3d32]">{aiResult}</div>
             )}
           </div>
@@ -709,6 +683,13 @@ function PrintEstimator() {
                       ? peso(result.marketReference)
                       : "Unavailable"}
                   </strong>
+                  {result.marketReferenceAvailable &&
+                    result.marketUnitPrice != null && (
+                      <span className="mt-1 block text-[11px] text-[#afbea9]">
+                        {peso(result.marketUnitPrice)} / page · {result.pageCount} page
+                        {result.pageCount === 1 ? "" : "s"}
+                      </span>
+                    )}
                 </div>
                 {result.marketReferenceAvailable &&
                   result.marketReference != null && (
