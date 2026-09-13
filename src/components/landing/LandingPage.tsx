@@ -4,6 +4,7 @@ import { SiteHeader } from "./SiteHeader";
 import { ToolCard, type ToolCardTheme } from "./ToolCard";
 import {
   PdfToolsIllustration,
+  PhotoIdIllustration,
   PrintSheetsIllustration,
   ProductCostIllustration,
   QrCodeIllustration,
@@ -84,7 +85,22 @@ const TOOLS: Tool[] = [
     illustration: <QrCodeIllustration />,
   },
   {
-    category: "05 / Documents",
+    category: "05 / Photos",
+    title: "Photo ID editor",
+    description:
+      "Crop, retouch, and tile passport or ID photos onto a print-ready sheet without leaving your browser.",
+    cta: "Make ID photos",
+    href: "/id-photo-print",
+    theme: {
+      background: "bg-[#dbe7ef]",
+      border: "border-[rgba(58,102,140,0.22)] hover:border-[rgba(58,102,140,0.44)]",
+      label: "text-[#4d6c86]",
+      cta: "text-[#37556b]",
+    },
+    illustration: <PhotoIdIllustration />,
+  },
+  {
+    category: "06 / Documents",
     title: "PDF tools",
     description:
       "Edit, sign, merge, split, convert, watermark, and compress PDFs. Every document stays on your device.",

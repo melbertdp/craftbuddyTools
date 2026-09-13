@@ -3,14 +3,19 @@
 import * as React from "react";
 import {
   Download,
+  Eraser,
   FlipHorizontal,
   ImagePlus,
   ImageUp,
   Loader2,
+  Move,
+  Paintbrush,
   Printer,
   Redo2,
   RotateCcw,
   RotateCw,
+  Shirt,
+  Sparkles,
   Trash2,
   Undo2,
 } from "lucide-react";
@@ -23,6 +28,13 @@ import {
   CropperImage,
 } from "@/components/ui/image-crop";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   PAPER_SIZES,
   PHOTO_SIZES,
   fitCropArea,
@@ -31,6 +43,14 @@ import {
   type SheetCell,
 } from "./layout";
 import { SHIRT_PRESETS } from "./shirts";
+import { computeAutoFit, rotateKeypoints } from "./autofit";
+import {
+  DEFAULT_GARMENT_META,
+  deriveGarmentMeta,
+  isTransparent,
+  type GarmentMeta,
+} from "./garments";
+import { detectPose } from "./pose";
 
 const DPI = 300;
 const DEFAULT_MARGIN_MM = 4;
@@ -177,7 +197,9 @@ function cropToCanvas(image: HTMLImageElement, area: CropArea) {
 }
 
 function rotateCanvas(source: HTMLCanvasElement, degrees: number) {
-  const sideways = Math.abs(degrees % 180) === 90;
+  const normalized = ((degrees % 360) + 360) % 360;
+  if (normalized === 0) return source;
+  const sideways = normalized === 90 || normalized === 270;
   const canvas = document.createElement("canvas");
   canvas.width = sideways ? source.height : source.width;
   canvas.height = sideways ? source.width : source.height;
@@ -211,25 +233,93 @@ function adjustedCanvas(
   const canvas = canvasFrom(source);
   const context = canvas.getContext("2d");
   if (!context) return canvas;
-  const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = background;
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
   context.drawImage(source, 0, 0);
-  void pixels;
   return canvas;
+}
+
+/**
+ * Hides the parts of the person the user brushed away. The original photo is
+ * never modified: the mask is a separate layer where opaque means "keep" and
+ * transparent means "hide" (revealing the background colour underneath).
+ */
+function applyPersonMask(
+  source: HTMLCanvasElement,
+  mask: HTMLCanvasElement | null,
+  feather: number,
+) {
+  if (!mask) return source;
+  const canvas = canvasFrom(source);
+  const context = canvas.getContext("2d");
+  if (!context) return canvas;
+  context.globalCompositeOperation = "destination-in";
+  if (feather > 0) context.filter = `blur(${feather}px)`;
+  context.drawImage(mask, 0, 0, canvas.width, canvas.height);
+  context.filter = "none";
+  context.globalCompositeOperation = "source-over";
+  return canvas;
+}
+
+type ShirtTransform = {
+  /** Garment collar point in normalized canvas coordinates (0..1). */
+  anchorX: number;
+  anchorY: number;
+  scale: number;
+  /** Garment rotation in degrees. */
+  rotation: number;
+};
+
+const DEFAULT_SHIRT_TRANSFORM: ShirtTransform = {
+  anchorX: 0.5,
+  anchorY: 0.45,
+  scale: 1,
+  rotation: 0,
+};
+
+/**
+ * Draws the garment so its collar anchor lands on the transform's anchor
+ * point, then rotates about that anchor. Normalized coordinates keep the
+ * alignment preview and the print-resolution export identical.
+ */
+function drawShirt(
+  context: CanvasRenderingContext2D,
+  shirt: HTMLImageElement,
+  width: number,
+  height: number,
+  transform: ShirtTransform,
+  meta: GarmentMeta | null,
+) {
+  const ratio = shirt.naturalWidth
+    ? shirt.naturalHeight / shirt.naturalWidth
+    : 1;
+  const drawWidth = width * transform.scale;
+  const drawHeight = drawWidth * ratio;
+  const anchor = meta?.anchor ?? { x: 0.5, y: 0 };
+  const anchorPxX = anchor.x * drawWidth;
+  const anchorPxY = anchor.y * drawHeight;
+  context.save();
+  context.translate(transform.anchorX * width, transform.anchorY * height);
+  if (transform.rotation) {
+    context.rotate((transform.rotation * Math.PI) / 180);
+  }
+  context.drawImage(shirt, -anchorPxX, -anchorPxY, drawWidth, drawHeight);
+  context.restore();
 }
 
 function addShirtOverlay(
   source: HTMLCanvasElement,
   shirt: HTMLImageElement | null,
+  transform: ShirtTransform,
+  meta: GarmentMeta | null,
 ) {
   if (!shirt) return source;
   const canvas = canvasFrom(source);
   const context = canvas.getContext("2d");
   if (!context) return canvas;
-  context.drawImage(shirt, 0, 0, canvas.width, canvas.height);
+  drawShirt(context, shirt, canvas.width, canvas.height, transform, meta);
   return canvas;
 }
 
@@ -368,6 +458,39 @@ export default function PhotoIdPrintPage() {
   const [shirtImage, setShirtImage] = React.useState<HTMLImageElement | null>(
     null,
   );
+  const [shirtTransform, setShirtTransform] = React.useState<ShirtTransform>(
+    DEFAULT_SHIRT_TRANSFORM,
+  );
+  const [garmentMeta, setGarmentMeta] = React.useState<GarmentMeta | null>(
+    null,
+  );
+  const [autoFitBusy, setAutoFitBusy] = React.useState(false);
+  const [autoFitStatus, setAutoFitStatus] = React.useState("");
+  const [availableShirts, setAvailableShirts] = React.useState(SHIRT_PRESETS);
+  const [editMode, setEditMode] = React.useState<"move" | "erase" | "restore">(
+    "move",
+  );
+  const [brushSize, setBrushSize] = React.useState(26);
+  const [feather, setFeather] = React.useState(1.5);
+  const [maskVersion, setMaskVersion] = React.useState(0);
+  const [shirtOpen, setShirtOpen] = React.useState(false);
+  const [editorReady, setEditorReady] = React.useState(0);
+  const editorPreviewRef = React.useRef<HTMLCanvasElement | null>(null);
+  const setEditorCanvas = React.useCallback((node: HTMLCanvasElement | null) => {
+    editorPreviewRef.current = node;
+    if (node) setEditorReady((value) => value + 1);
+  }, []);
+  const maskRef = React.useRef<HTMLCanvasElement | null>(null);
+  const maskHistoryRef = React.useRef<string[]>([]);
+  const maskFrameRef = React.useRef<number | null>(null);
+  const maskStrokeRef = React.useRef<{ x: number; y: number } | null>(null);
+  const shirtDragRef = React.useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
   const [history, setHistory] = React.useState<string[]>([]);
   const [future, setFuture] = React.useState<string[]>([]);
   const [activeStep, setActiveStep] = React.useState(1);
@@ -419,6 +542,10 @@ export default function PhotoIdPrintPage() {
         gapMm,
       );
   const totalPhotos = cells.length;
+  const selectedShirt = availableShirts.find((item) => item.id === shirtId);
+  const shirtLabel = selectedShirt
+    ? `${selectedShirt.group} · ${selectedShirt.label}`
+    : "No shirt";
 
   React.useEffect(() => {
     const area = lastCropAreaRef.current;
@@ -573,45 +700,352 @@ export default function PhotoIdPrintPage() {
   }, [activeStep, bgRemove, crop]);
 
   React.useEffect(() => {
+    setShirtTransform(DEFAULT_SHIRT_TRANSFORM);
+    setAutoFitStatus("");
     const preset = SHIRT_PRESETS.find((item) => item.id === shirtId);
     if (!preset) {
       setShirtImage(null);
+      setGarmentMeta(null);
       return;
     }
     let cancelled = false;
-    void loadImage(preset.src).then((image) => {
-      if (!cancelled) setShirtImage(image);
-    });
+    void loadImage(preset.src)
+      .then((image) => {
+        if (cancelled) return;
+        setShirtImage(image);
+        setGarmentMeta(deriveGarmentMeta(image));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setShirtImage(null);
+        setGarmentMeta(null);
+      });
     return () => {
       cancelled = true;
     };
   }, [shirtId]);
 
-  const finalCanvas = React.useMemo(() => {
+  React.useEffect(() => {
+    setEditMode(shirtId === "none" ? "erase" : "move");
+  }, [shirtId]);
+
+  // Hide any asset that is missing or has no transparency, so the selector
+  // only ever offers garments that can actually be composited.
+  React.useEffect(() => {
+    let cancelled = false;
+    void Promise.all(
+      SHIRT_PRESETS.map(async (preset) => {
+        try {
+          const image = await loadImage(preset.src);
+          return isTransparent(image) ? preset : null;
+        } catch {
+          return null;
+        }
+      }),
+    ).then((list) => {
+      if (cancelled) return;
+      setAvailableShirts(
+        list.filter(
+          (preset): preset is (typeof SHIRT_PRESETS)[number] => preset !== null,
+        ),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Keep the alignment proportional, but reset when the crop changes.
+  React.useEffect(() => {
+    setShirtTransform(DEFAULT_SHIRT_TRANSFORM);
+  }, [crop]);
+
+  // The person mask lives in the rotated crop space. Opaque = keep the
+  // original pixels, transparent = hide them so the background shows through.
+  React.useEffect(() => {
+    if (!crop) {
+      maskRef.current = null;
+      maskHistoryRef.current = [];
+      setMaskVersion((value) => value + 1);
+      return;
+    }
+    const source = rotateCanvas(processedCrop ?? crop, rotation);
+    const maxMaskDim = 1600;
+    const maskScale = Math.min(
+      1,
+      maxMaskDim / Math.max(source.width, source.height),
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(source.width * maskScale));
+    canvas.height = Math.max(1, Math.round(source.height * maskScale));
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    maskRef.current = canvas;
+    maskHistoryRef.current = [];
+    setMaskVersion((value) => value + 1);
+  }, [crop, processedCrop, rotation]);
+
+  const baseCanvas = React.useMemo(() => {
     if (!crop) return null;
     const source = processedCrop ?? crop;
-    const adjusted = adjustedCanvas(
-      rotateCanvas(source, rotation),
-      brightness,
-      contrast,
-      saturation,
-      bgColor,
-    );
-    return addShirtOverlay(adjusted, shirtImage);
+    const rotated = rotateCanvas(source, rotation);
+    const masked = applyPersonMask(rotated, maskRef.current, feather);
+    return adjustedCanvas(masked, brightness, contrast, saturation, bgColor);
   }, [
     bgColor,
     brightness,
     contrast,
     crop,
+    feather,
+    maskVersion,
     processedCrop,
     rotation,
     saturation,
-    shirtImage,
   ]);
-  const finalUrl = React.useMemo(
-    () => finalCanvas?.toDataURL("image/png") ?? null,
-    [finalCanvas],
+
+  const finalCanvas = React.useMemo(
+    () =>
+      baseCanvas
+        ? addShirtOverlay(baseCanvas, shirtImage, shirtTransform, garmentMeta)
+        : null,
+    [baseCanvas, garmentMeta, shirtImage, shirtTransform],
   );
+
+  function scheduleMaskRender() {
+    if (maskFrameRef.current != null) return;
+    maskFrameRef.current = window.requestAnimationFrame(() => {
+      maskFrameRef.current = null;
+      setMaskVersion((value) => value + 1);
+    });
+  }
+
+  function pushMaskHistory() {
+    const mask = maskRef.current;
+    if (!mask) return;
+    maskHistoryRef.current = [
+      ...maskHistoryRef.current.slice(-11),
+      mask.toDataURL("image/png"),
+    ];
+  }
+
+  function brushMask(
+    from: { x: number; y: number } | null,
+    to: { x: number; y: number },
+  ) {
+    const mask = maskRef.current;
+    if (!mask) return;
+    const context = mask.getContext("2d");
+    if (!context) return;
+    const displayWidth = editorPreviewRef.current?.width || mask.width;
+    const lineWidth = Math.max(1, (brushSize / displayWidth) * mask.width);
+    const erasing = editMode === "erase";
+    context.globalCompositeOperation = erasing
+      ? "destination-out"
+      : "source-over";
+    context.strokeStyle = "#ffffff";
+    context.fillStyle = "#ffffff";
+    context.lineWidth = lineWidth;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    const x = to.x * mask.width;
+    const y = to.y * mask.height;
+    if (from) {
+      context.beginPath();
+      context.moveTo(from.x * mask.width, from.y * mask.height);
+      context.lineTo(x, y);
+      context.stroke();
+    } else {
+      context.beginPath();
+      context.arc(x, y, lineWidth / 2, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.globalCompositeOperation = "source-over";
+    scheduleMaskRender();
+  }
+
+  async function undoMask() {
+    const previous = maskHistoryRef.current.at(-1);
+    const mask = maskRef.current;
+    if (!previous || !mask) return;
+    maskHistoryRef.current = maskHistoryRef.current.slice(0, -1);
+    try {
+      const image = await loadImage(previous);
+      const context = mask.getContext("2d");
+      if (!context) return;
+      context.globalCompositeOperation = "source-over";
+      context.clearRect(0, 0, mask.width, mask.height);
+      context.drawImage(image, 0, 0, mask.width, mask.height);
+      setMaskVersion((value) => value + 1);
+    } catch {
+      // Ignore a failed restore and keep the current mask.
+    }
+  }
+
+  function resetMask() {
+    const mask = maskRef.current;
+    if (!mask) return;
+    pushMaskHistory();
+    const context = mask.getContext("2d");
+    if (!context) return;
+    context.globalCompositeOperation = "source-over";
+    context.clearRect(0, 0, mask.width, mask.height);
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, mask.width, mask.height);
+    setMaskVersion((value) => value + 1);
+  }
+
+  React.useEffect(() => {
+    const canvas = editorPreviewRef.current;
+    if (!canvas || !finalCanvas) return;
+    const ratio = finalCanvas.width / finalCanvas.height;
+    const maxWidth = 460;
+    const maxHeight = 560;
+    let width = maxWidth;
+    let height = Math.round(maxWidth / ratio);
+    if (height > maxHeight) {
+      height = maxHeight;
+      width = Math.round(maxHeight * ratio);
+    }
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.clearRect(0, 0, width, height);
+    context.drawImage(finalCanvas, 0, 0, width, height);
+  }, [editorReady, finalCanvas, shirtOpen]);
+
+  function editorPoint(event: React.PointerEvent<HTMLCanvasElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: rect.width ? (event.clientX - rect.left) / rect.width : 0,
+      y: rect.height ? (event.clientY - rect.top) / rect.height : 0,
+    };
+  }
+
+  function handleEditorPointerDown(
+    event: React.PointerEvent<HTMLCanvasElement>,
+  ) {
+    const canvas = event.currentTarget;
+    if (editMode === "move") {
+      if (!shirtImage) return;
+      canvas.setPointerCapture(event.pointerId);
+      shirtDragRef.current = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: shirtTransform.anchorX,
+        originY: shirtTransform.anchorY,
+      };
+      return;
+    }
+    if (!maskRef.current) return;
+    canvas.setPointerCapture(event.pointerId);
+    pushMaskHistory();
+    const point = editorPoint(event);
+    maskStrokeRef.current = point;
+    brushMask(null, point);
+  }
+
+  function handleEditorPointerMove(
+    event: React.PointerEvent<HTMLCanvasElement>,
+  ) {
+    if (editMode === "move") {
+      const drag = shirtDragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      const canvas = event.currentTarget;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = rect.width ? canvas.width / rect.width : 1;
+      const scaleY = rect.height ? canvas.height / rect.height : 1;
+      const deltaX =
+        ((event.clientX - drag.startX) * scaleX) / (canvas.width || 1);
+      const deltaY =
+        ((event.clientY - drag.startY) * scaleY) / (canvas.height || 1);
+      setShirtTransform((value) => ({
+        ...value,
+        anchorX: drag.originX + deltaX,
+        anchorY: drag.originY + deltaY,
+      }));
+      return;
+    }
+    const stroke = maskStrokeRef.current;
+    if (!stroke) return;
+    const point = editorPoint(event);
+    brushMask(stroke, point);
+    maskStrokeRef.current = point;
+  }
+
+  function handleEditorPointerUp(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (shirtDragRef.current?.pointerId === event.pointerId) {
+      shirtDragRef.current = null;
+    }
+    if (maskStrokeRef.current) maskStrokeRef.current = null;
+    const canvas = event.currentTarget;
+    if (canvas.hasPointerCapture(event.pointerId)) {
+      canvas.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  async function runAutoFit() {
+    if (!crop || !shirtImage || autoFitBusy) return;
+    setAutoFitBusy(true);
+    setAutoFitStatus("Detecting pose…");
+    try {
+      const keypoints = await detectPose(crop);
+      if (!keypoints) {
+        setAutoFitStatus("No person detected. Align the shirt manually.");
+        return;
+      }
+      const mapped = rotateKeypoints(
+        keypoints,
+        crop.width,
+        crop.height,
+        rotation,
+      );
+      const rotated = rotation ? rotateCanvas(crop, rotation) : crop;
+      const fit = computeAutoFit({
+        keypoints: mapped,
+        width: rotated.width,
+        height: rotated.height,
+        garment: garmentMeta ?? DEFAULT_GARMENT_META,
+      });
+      if (!fit) {
+        setAutoFitStatus("Shoulders not detected. Align the shirt manually.");
+        return;
+      }
+      setShirtTransform(fit);
+      setAutoFitStatus(
+        fit.approximate
+          ? "Approximate fit from the head — fine-tune as needed."
+          : "Auto fit applied. Fine-tune as needed.",
+      );
+    } catch (error) {
+      setAutoFitStatus(
+        error instanceof Error
+          ? `Auto fit failed: ${error.message}`
+          : "Auto fit failed.",
+      );
+    } finally {
+      setAutoFitBusy(false);
+    }
+  }
+
+  const finalUrl = React.useMemo(() => {
+    if (!finalCanvas) return null;
+    const maxDim = 720;
+    const scale = Math.min(
+      1,
+      maxDim / Math.max(finalCanvas.width, finalCanvas.height),
+    );
+    const preview = document.createElement("canvas");
+    preview.width = Math.max(1, Math.round(finalCanvas.width * scale));
+    preview.height = Math.max(1, Math.round(finalCanvas.height * scale));
+    const context = preview.getContext("2d");
+    if (!context) return null;
+    context.drawImage(finalCanvas, 0, 0, preview.width, preview.height);
+    return preview.toDataURL("image/jpeg", 0.85);
+  }, [finalCanvas]);
 
   function rememberCurrent() {
     if (imageSrc) {
@@ -634,6 +1068,7 @@ export default function PhotoIdPrintPage() {
       setBgRemove(false);
       setShirtId("none");
       setShirtImage(null);
+      setShirtTransform(DEFAULT_SHIRT_TRANSFORM);
       setZoom(1);
       setHistory([]);
       setFuture([]);
@@ -654,6 +1089,7 @@ export default function PhotoIdPrintPage() {
     setBgRemove(false);
     setShirtId("none");
     setShirtImage(null);
+    setShirtTransform(DEFAULT_SHIRT_TRANSFORM);
     setBgStatus("");
     setHistory([]);
     setFuture([]);
@@ -1440,9 +1876,6 @@ export default function PhotoIdPrintPage() {
                   />
                   <span>
                     <b>Remove Background</b>
-                    <small className="block text-xs text-muted-foreground">
-                      AI · Hivision MODNet runs locally
-                    </small>
                   </span>
                 </label>
                 {bgLoading && (
@@ -1489,41 +1922,21 @@ export default function PhotoIdPrintPage() {
                       </button>
                     )}
                   </div>
-                  <p className="mb-3 text-[11px] leading-[1.4] text-muted-foreground">
-                    Select a preset overlay for the printed photo. Keep the face
-                    and shoulders inside the crop for the best fit.
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between"
+                    onClick={() => setShirtOpen(true)}
+                    disabled={!crop}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Shirt className="h-4 w-4" />
+                      {shirtLabel}
+                    </span>
+                    <span className="text-muted-foreground">Open studio</span>
+                  </Button>
+                  <p className="mt-2 text-[11px] leading-[1.4] text-muted-foreground">
+                    Attire and clean edges, in a larger offline editor.
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShirtId("none")}
-                      className={`rounded border p-1.5 text-left text-[11px] ${shirtId === "none" ? "border-primary bg-primary/10" : "border-line"}`}
-                    >
-                      <div className="grid aspect-square place-items-center rounded bg-background text-center text-muted-foreground">
-                        None
-                      </div>
-                      <span className="mt-1 block">No shirt</span>
-                    </button>
-                    {SHIRT_PRESETS.map((shirt) => (
-                      <button
-                        key={shirt.id}
-                        type="button"
-                        onClick={() => setShirtId(shirt.id)}
-                        className={`rounded border p-1.5 text-left text-[11px] ${shirtId === shirt.id ? "border-primary bg-primary/10" : "border-line"}`}
-                      >
-                        <div className="aspect-square overflow-hidden rounded bg-background">
-                          <img
-                            src={shirt.src}
-                            alt=""
-                            className="h-full w-full object-contain"
-                          />
-                        </div>
-                        <span className="mt-1 block truncate">
-                          {shirt.group} · {shirt.label}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </section>
 
@@ -1588,6 +2001,232 @@ export default function PhotoIdPrintPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={shirtOpen} onOpenChange={setShirtOpen}>
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Formal clothing and clean edges</DialogTitle>
+            <DialogDescription>
+              Choose attire, line it up, then brush away the old clothing. Runs
+              entirely in your browser.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold">Formal clothing</p>
+                {shirtId !== "none" && (
+                  <button
+                    type="button"
+                    className="text-[11px] text-muted-foreground underline"
+                    onClick={() => setShirtId("none")}
+                  >
+                    Remove shirt
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShirtId("none")}
+                  className={`rounded-md border p-1.5 text-left text-[11px] ${
+                    shirtId === "none"
+                      ? "border-primary bg-primary/10"
+                      : "border-line"
+                  }`}
+                >
+                  <div className="grid aspect-square place-items-center rounded bg-background text-center text-muted-foreground">
+                    None
+                  </div>
+                  <span className="mt-1 block">No shirt</span>
+                </button>
+                {availableShirts.map((shirt) => (
+                  <button
+                    key={shirt.id}
+                    type="button"
+                    onClick={() => setShirtId(shirt.id)}
+                    className={`rounded-md border p-1.5 text-left text-[11px] ${
+                      shirtId === shirt.id
+                        ? "border-primary bg-primary/10"
+                        : "border-line"
+                    }`}
+                  >
+                    <div className="aspect-square overflow-hidden rounded bg-background">
+                      <img
+                        src={shirt.src}
+                        alt=""
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                    <span className="mt-1 block truncate">
+                      {shirt.group} · {shirt.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold">Clean edges</p>
+                <span className="text-[11px] text-muted-foreground">
+                  Runs offline
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                <Button
+                  size="sm"
+                  variant={editMode === "move" ? "secondary" : "outline"}
+                  disabled={!shirtImage}
+                  onClick={() => setEditMode("move")}
+                >
+                  <Move className="mr-1 h-3.5 w-3.5" />
+                  Move
+                </Button>
+                <Button
+                  size="sm"
+                  variant={editMode === "erase" ? "secondary" : "outline"}
+                  onClick={() => setEditMode("erase")}
+                >
+                  <Eraser className="mr-1 h-3.5 w-3.5" />
+                  Erase
+                </Button>
+                <Button
+                  size="sm"
+                  variant={editMode === "restore" ? "secondary" : "outline"}
+                  onClick={() => setEditMode("restore")}
+                >
+                  <Paintbrush className="mr-1 h-3.5 w-3.5" />
+                  Restore
+                </Button>
+              </div>
+              <canvas
+                ref={setEditorCanvas}
+                onPointerDown={handleEditorPointerDown}
+                onPointerMove={handleEditorPointerMove}
+                onPointerUp={handleEditorPointerUp}
+                onPointerCancel={handleEditorPointerUp}
+                className={`mx-auto block h-auto w-full max-w-[460px] touch-none rounded-md border border-line bg-white ${
+                  editMode === "move" ? "cursor-move" : "cursor-crosshair"
+                }`}
+              />
+              <p className="text-center text-[11px] text-muted-foreground">
+                {editMode === "move"
+                  ? "Drag the shirt to line it up with the neck and shoulders."
+                  : editMode === "erase"
+                    ? "Brush over the old clothing you want to hide."
+                    : "Brush to bring the original pixels back."}
+              </p>
+              {editMode === "move" ? (
+                <>
+                  <label className="flex items-center gap-3 text-xs">
+                    <span className="w-12">Scale</span>
+                    <Slider
+                      value={[shirtTransform.scale]}
+                      min={0.4}
+                      max={2}
+                      step={0.01}
+                      onValueChange={(value) =>
+                        setShirtTransform((transform) => ({
+                          ...transform,
+                          scale: value[0],
+                        }))
+                      }
+                      aria-label="Shirt scale"
+                    />
+                    <b className="min-w-12 text-right">
+                      {Math.round(shirtTransform.scale * 100)}%
+                    </b>
+                  </label>
+                  <label className="flex items-center gap-3 text-xs">
+                    <span className="w-12">Rotate</span>
+                    <Slider
+                      value={[shirtTransform.rotation]}
+                      min={-45}
+                      max={45}
+                      step={0.5}
+                      onValueChange={(value) =>
+                        setShirtTransform((transform) => ({
+                          ...transform,
+                          rotation: value[0],
+                        }))
+                      }
+                      aria-label="Shirt rotation"
+                    />
+                    <b className="min-w-12 text-right">
+                      {shirtTransform.rotation.toFixed(1)}°
+                    </b>
+                  </label>
+                  <Button
+                    className="w-full"
+                    variant="secondary"
+                    size="sm"
+                    disabled={!shirtImage || autoFitBusy}
+                    onClick={() => void runAutoFit()}
+                  >
+                    {autoFitBusy ? (
+                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="mr-1 h-3.5 w-3.5" />
+                    )}
+                    {autoFitBusy ? "Fitting…" : "Auto fit"}
+                  </Button>
+                  {autoFitStatus && (
+                    <p className="text-[11px] leading-[1.4] text-muted-foreground">
+                      {autoFitStatus}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <label className="flex items-center gap-3 text-xs">
+                  <span className="w-12">Brush</span>
+                  <Slider
+                    value={[brushSize]}
+                    min={4}
+                    max={90}
+                    step={1}
+                    onValueChange={(value) => setBrushSize(value[0])}
+                    aria-label="Brush size"
+                  />
+                  <b className="min-w-12 text-right">{brushSize}px</b>
+                </label>
+              )}
+              <label className="flex items-center gap-3 text-xs">
+                <span className="w-12">Feather</span>
+                <Slider
+                  value={[feather]}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  onValueChange={(value) => setFeather(value[0])}
+                  aria-label="Edge feather"
+                />
+                <b className="min-w-12 text-right">{feather}px</b>
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!shirtImage}
+                  onClick={() => setShirtTransform(DEFAULT_SHIRT_TRANSFORM)}
+                >
+                  Reset fit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void undoMask()}
+                >
+                  <Undo2 className="mr-1 h-3.5 w-3.5" />
+                  Undo
+                </Button>
+                <Button variant="outline" size="sm" onClick={resetMask}>
+                  Reset mask
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

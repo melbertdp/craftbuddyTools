@@ -278,6 +278,113 @@ export function QrCodeIllustration() {
   );
 }
 
+export function PhotoIdIllustration() {
+  const uid = useId().replace(/:/g, "");
+  const photoWidth = 69;
+  const photoHeight = 69;
+  const photos = [
+    { x: 132, y: 76 },
+    { x: 211, y: 76 },
+    { x: 132, y: 155 },
+    { x: 211, y: 155 },
+  ];
+
+  return (
+    <svg viewBox="0 0 320 320" className="h-full w-full font-sans" {...SVG_PROPS}>
+      <defs>
+        <filter id={`${uid}-soft`} x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="7" stdDeviation="9" floodColor="#24435a" floodOpacity="0.14" />
+        </filter>
+      </defs>
+
+      <ellipse cx="204" cy="176" rx="120" ry="108" fill="#d3e3ef" opacity="0.85" />
+      <circle cx="150" cy="140" r="72" fill="none" stroke="rgba(58,102,140,0.20)" strokeWidth="1.5" />
+
+      <g transform="rotate(-7 200 160)">
+        <rect
+          x="120"
+          y="62"
+          width="176"
+          height="196"
+          rx="12"
+          fill="#e3eef5"
+          stroke="rgba(58,102,140,0.16)"
+        />
+      </g>
+      <g filter={`url(#${uid}-soft)`}>
+        <rect
+          x="118"
+          y="60"
+          width="176"
+          height="196"
+          rx="12"
+          fill="#fdfefe"
+          stroke="rgba(58,102,140,0.24)"
+        />
+        {photos.map((photo, index) => (
+          <g key={`${photo.x}-${photo.y}`}>
+            <clipPath id={`${uid}-clip-${index}`}>
+              <rect
+                x={photo.x}
+                y={photo.y}
+                width={photoWidth}
+                height={photoHeight}
+                rx="5"
+              />
+            </clipPath>
+            <rect
+              x={photo.x}
+              y={photo.y}
+              width={photoWidth}
+              height={photoHeight}
+              rx="5"
+              fill="#cfe6f4"
+              stroke="rgba(58,102,140,0.22)"
+            />
+            <g clipPath={`url(#${uid}-clip-${index})`}>
+              <circle
+                cx={photo.x + photoWidth / 2}
+                cy={photo.y + 26}
+                r="13"
+                fill="#7fa9c9"
+              />
+              <path
+                d={`M${photo.x + 12} ${photo.y + photoHeight} c0-15 10-25 22.5-25s22.5 10 22.5 25 Z`}
+                fill="#7fa9c9"
+              />
+            </g>
+          </g>
+        ))}
+      </g>
+
+      <g filter={`url(#${uid}-soft)`}>
+        <circle cx="284" cy="64" r="22" fill="#2f4a5e" />
+      </g>
+      <text
+        x="284"
+        y="61"
+        textAnchor="middle"
+        fill="#eef5f8"
+        fontSize="11"
+        fontWeight="700"
+        letterSpacing="0.3"
+      >
+        2×2
+      </text>
+      <text x="284" y="73" textAnchor="middle" fill="#b9d0dd" fontSize="5.4" letterSpacing="0.3">
+        INCHES
+      </text>
+
+      <g transform="rotate(-6 60 280)">
+        <text className="font-serif italic" fill="#4d6c86" fontSize="15">
+          <tspan x="16" y="270">Faces that</tspan>
+          <tspan x="16" y="288">look their best</tspan>
+        </text>
+      </g>
+    </svg>
+  );
+}
+
 export function PdfToolsIllustration() {
   const uid = useId().replace(/:/g, "");
   return (
