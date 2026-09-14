@@ -1,4 +1,4 @@
-const CACHE_NAME = "craftbuddy-v6";
+const CACHE_NAME = "craftbuddy-v7";
 const TOOL_ASSET_BASE_URL = "https://toolassets.craftbuddy.app/tools";
 const PDF_TOOLS = [
   "edit",
