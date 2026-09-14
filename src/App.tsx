@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BrowserRouter, Link, NavLink, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -29,6 +29,8 @@ import { LandingPage } from "./components/landing/LandingPage";
 import { QuickDropPage } from "./components/landing/QuickDropPage";
 import { BrandHeader } from "./components/BrandHeader";
 import { SiteFooter } from "./components/SiteFooter";
+import { PdfHomePage } from "./pdf/PdfHomePage";
+import { getToolComponent } from "./pdf/tools/registry";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -126,6 +128,12 @@ function ScrollToTop() {
   }, [pathname]);
 
   return null;
+}
+
+function PdfToolRoute() {
+  const { tool = "" } = useParams();
+  const Component = getToolComponent(tool);
+  return Component ? <Component /> : <Navigate to="/pdf" replace />;
 }
 
 function Field({
@@ -877,6 +885,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/quickdrop" element={<QuickDropPage />} />
+        <Route path="/pdf" element={<PdfHomePage />} />
+        <Route path="/pdf/:tool" element={<PdfToolRoute />} />
         <Route element={<Layout />}>
           <Route path="/print-estimator-v2" element={<PrintEstimatorV2 />} />
           <Route path="/cost-estimator" element={<PricingCalculator />} />

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { BrandHeader } from "@/components/BrandHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -38,7 +38,7 @@ export function ToolShell({
           ].map(([href, label]) => (
             <Link
               key={href}
-              href={href}
+              to={href}
               className="px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground sm:px-0 sm:py-0"
             >
               {label}

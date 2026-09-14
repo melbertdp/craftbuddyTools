@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 
 interface ToolCardProps {
@@ -11,7 +11,7 @@ interface ToolCardProps {
 export function ToolCard({ href, title, description, icon: Icon }: ToolCardProps) {
   return (
     <Link
-      href={href}
+      to={href}
       className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none"
     >
       <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
