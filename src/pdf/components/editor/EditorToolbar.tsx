@@ -34,6 +34,7 @@ interface EditorToolbarProps {
   mode: "edit" | "sign";
   onAddImage: () => void;
   onAddSignature: () => void;
+  actions?: React.ReactNode;
 }
 
 interface ToolButton {
@@ -67,7 +68,7 @@ const SHAPE_TYPES: { value: ShapeObject["type"]; label: string; icon: React.Comp
   { value: "arrow", label: "Arrow", icon: MoveUpRight },
 ];
 
-export function EditorToolbar({ mode, onAddImage, onAddSignature }: EditorToolbarProps) {
+export function EditorToolbar({ mode, onAddImage, onAddSignature, actions }: EditorToolbarProps) {
   const tool = useWorkspaceStore((state) => state.tool);
   const settings = useWorkspaceStore((state) => state.settings);
   const setTool = useWorkspaceStore((state) => state.setTool);
@@ -179,6 +180,7 @@ export function EditorToolbar({ mode, onAddImage, onAddSignature }: EditorToolba
           </Tooltip>
         </div>
       )}
+      {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
     </div>
   );
 }

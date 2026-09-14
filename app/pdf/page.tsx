@@ -1,6 +1,5 @@
-import { Lock } from "lucide-react";
+import Link from "next/link";
 import { BrandHeader } from "@/components/BrandHeader";
-import { ToolsNav } from "@/components/ToolsNav";
 import { ToolCard } from "@/pdf/components/common/ToolCard";
 import { PDF_TOOL_CATEGORIES } from "@/pdf/tools";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -9,13 +8,25 @@ export default function PdfHomePage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <BrandHeader>
-        <div className="flex items-center gap-5">
-          <ToolsNav className="hidden md:flex" />
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
-            <Lock className="size-3" aria-hidden />
-            Local processing
-          </span>
-        </div>
+        <nav className="flex w-full flex-col items-stretch gap-0 sm:w-max sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-6">
+          {[
+            ["/print-estimator-v2", "Print Calculator"],
+            ["/cost-estimator", "Cost estimator"],
+            ["/qr-generator", "QR generator"],
+            ["/id-photo-print", "ID photo print"],
+            ["/profiles", "Profiles"],
+            ["/market-benchmark", "Market benchmark"],
+            ["/pdf", "PDF tools"],
+          ].map(([href, label]) => (
+            <Link
+              key={href}
+              href={href}
+              className="px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground sm:px-0 sm:py-0"
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
       </BrandHeader>
 
       <main className="mx-auto w-full max-w-[1240px] flex-1 px-6 py-10">

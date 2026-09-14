@@ -5,7 +5,6 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { BrandHeader } from "@/components/BrandHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { ToolsNav } from "@/components/ToolsNav";
 
 interface ToolShellProps {
   title: string;
@@ -27,22 +26,25 @@ export function ToolShell({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <BrandHeader>
-        <div className="flex min-w-0 items-center gap-3">
-          <Link
-            href="/pdf"
-            className="hidden rounded-sm text-[13px] font-medium tracking-[0.04em] text-[#526057] transition-colors hover:text-[#20372b] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6f8368]/60 sm:inline"
-          >
-            PDF tools
-          </Link>
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-sm font-semibold tracking-tight text-foreground">{title}</h1>
-            {description && (
-              <p className="hidden truncate text-xs text-muted-foreground md:block">{description}</p>
-            )}
-          </div>
-          <ToolsNav className="hidden border-l border-[rgba(56,82,60,0.16)] pl-5 lg:flex" />
-          {actions && <div className="flex items-center gap-2">{actions}</div>}
-        </div>
+        <nav className="flex w-full flex-col items-stretch gap-0 sm:w-max sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-6">
+          {[
+            ["/print-estimator-v2", "Print Calculator"],
+            ["/cost-estimator", "Cost estimator"],
+            ["/qr-generator", "QR generator"],
+            ["/id-photo-print", "ID photo print"],
+            ["/profiles", "Profiles"],
+            ["/market-benchmark", "Market benchmark"],
+            ["/pdf", "PDF tools"],
+          ].map(([href, label]) => (
+            <Link
+              key={href}
+              href={href}
+              className="px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground sm:px-0 sm:py-0"
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
       </BrandHeader>
 
       <main

@@ -30,7 +30,7 @@ const TOOLS: Tool[] = [
     description:
       "Read a design, account for paper and ink, then set a price that protects your margin.",
     cta: "Estimate a print job",
-    href: "/print-estimator",
+    href: "/print-estimator-v2",
     theme: {
       background: "bg-[#e1e9da]",
       border: "border-[rgba(56,82,60,0.18)] hover:border-[rgba(56,82,60,0.36)]",

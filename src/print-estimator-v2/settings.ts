@@ -22,6 +22,13 @@ export const V2_DEFAULT_RATES: V2Rates = {
   full: 10,
 };
 
+export const V2_MARKET_RATES: V2Rates = {
+  bw: 5,
+  light: 7,
+  semi: 10,
+  full: 15,
+};
+
 const RATES_KEY = "cb-print-v2-rates";
 const THRESHOLDS_KEY = "cb-print-v2-thresholds";
 

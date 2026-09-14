@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BrowserRouter, Link, NavLink, Outlet, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Link, NavLink, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -21,6 +21,7 @@ import {
   type PrintProfile,
 } from "./lib/calculator";
 import { PricingCalculator } from "./PricingCalculator";
+import { PrintEstimatorV2 } from "./print-estimator-v2/PrintEstimatorV2";
 import { MarketBenchmarkPage } from "./components/market-benchmark/MarketBenchmarkPage";
 import QRDesigner from "./qr/QRDesigner";
 import PhotoIdPrintPage from "./photo-print/PhotoIdPrintPage";
@@ -86,11 +87,11 @@ function Layout() {
       <BrandHeader>
         <nav className="flex w-full flex-col items-stretch gap-0 sm:w-max sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-6">
           {[
-            ["/print-estimator", "Print estimator"],
+            ["/print-estimator-v2", "Print Calculator"],
             ["/cost-estimator", "Cost estimator"],
             ["/qr-generator", "QR generator"],
             ["/id-photo-print", "ID photo print"],
-            ["/profiles", "Profiles"],
+            // ["/profiles", "Profiles"],
             ["/market-benchmark", "Market benchmark"],
           ].map(([to, label]) => (
             <Button key={to} className="h-auto justify-start rounded-none px-3 py-2 text-left text-sm sm:px-0 sm:py-0" variant="ghost" asChild>
@@ -115,6 +116,16 @@ function Layout() {
       <SiteFooter />
     </div>
   );
+}
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
+
+  return null;
 }
 
 function Field({
@@ -334,7 +345,7 @@ function PrintEstimator() {
   }
   return (
     <main className="mx-auto w-full max-w-[1184px] px-7 py-[40px] pb-[100px] max-[760px]:px-5 max-[760px]:py-12 max-[760px]:pb-[70px]">
-      <div className="mb-[38px] flex items-end justify-between max-[760px]:block">
+      {/* <div className="mb-[38px] flex items-end justify-between max-[760px]:block">
         <div>
           <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Production / print job</div>
           <h1 className="mt-2 font-heading text-[45px] font-extrabold leading-[1.02] tracking-[-0.055em] max-[760px]:text-[37px]">Print cost estimator</h1>
@@ -343,7 +354,7 @@ function PrintEstimator() {
         <Link className="text-[13px] text-muted-foreground no-underline max-[760px]:mt-5 max-[760px]:inline-block" to="/profiles">
           Manage profiles ↗
         </Link>
-      </div>
+      </div> */}
       <div className="mb-[26px] flex items-start gap-3 border border-[#e8d9a8] bg-[#fdf8e7] px-4 py-3 max-[760px]:mb-5">
         <span className="mt-px rounded-sm bg-[#b8860b] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">Beta</span>
         <p className="text-[13px] leading-[1.5] text-[#7a5c00]">
@@ -862,15 +873,16 @@ function Profiles() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/quickdrop" element={<QuickDropPage />} />
         <Route element={<Layout />}>
-          <Route path="/print-estimator" element={<PrintEstimator />} />
+          <Route path="/print-estimator-v2" element={<PrintEstimatorV2 />} />
           <Route path="/cost-estimator" element={<PricingCalculator />} />
           <Route path="/qr-generator" element={<QRDesigner />} />
           <Route path="/id-photo-print" element={<PhotoIdPrintPage />} />
-          <Route path="/profiles" element={<Profiles />} />
+          {/* <Route path="/profiles" element={<Profiles />} /> */}
           <Route path="/market-benchmark" element={<MarketBenchmarkPage />} />
         </Route>
       </Routes>

@@ -213,50 +213,51 @@ export function EditorWorkspace({ mode, title, description }: EditorWorkspacePro
 
   const hasDocument = pages.length > 0;
 
+  const toolbarActions = (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Undo"
+            disabled={!canUndo}
+            onClick={() => store.getState().undo()}
+          >
+            <Undo2 className="size-4" aria-hidden />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Undo (Ctrl/Cmd+Z)</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Redo"
+            disabled={!canRedo}
+            onClick={() => store.getState().redo()}
+          >
+            <Redo2 className="size-4" aria-hidden />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Redo (Ctrl/Cmd+Shift+Z)</TooltipContent>
+      </Tooltip>
+      <Button type="button" size="sm" disabled={!hasDocument || busy} onClick={handleExport}>
+        {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
+        Save / Export
+      </Button>
+    </>
+  );
+
   return (
     <ToolShell
       title={title}
       description={description}
       wide
       contentClassName="flex min-h-0 flex-col"
-      actions={
-        <>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Undo"
-                disabled={!canUndo}
-                onClick={() => store.getState().undo()}
-              >
-                <Undo2 className="size-4" aria-hidden />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Undo (Ctrl/Cmd+Z)</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Redo"
-                disabled={!canRedo}
-                onClick={() => store.getState().redo()}
-              >
-                <Redo2 className="size-4" aria-hidden />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Redo (Ctrl/Cmd+Shift+Z)</TooltipContent>
-          </Tooltip>
-          <Button type="button" size="sm" disabled={!hasDocument || busy} onClick={handleExport}>
-            {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
-            Save / Export
-          </Button>
-        </>
-      }
     >
       {!hasDocument ? (
         <div className="mx-auto w-full max-w-2xl space-y-4">
@@ -333,6 +334,7 @@ export function EditorWorkspace({ mode, title, description }: EditorWorkspacePro
                 mode={mode}
                 onAddImage={() => imageInputRef.current?.click()}
                 onAddSignature={() => setSignatureOpen(true)}
+                actions={toolbarActions}
               />
               {activePage && (
                 <PdfViewer

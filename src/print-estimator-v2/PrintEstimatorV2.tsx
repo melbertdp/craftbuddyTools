@@ -1,17 +1,35 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Calculator,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  FileText,
+  Layers,
+  Leaf,
+  Receipt,
+  RotateCw,
+  Search,
+  Tag,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import type { V2ClassifiedPage, V2ColorClass } from "./types";
 import { V2_COLOR_LABELS, V2_CONTENT_LABELS } from "./types";
 import {
   V2_DEFAULT_RATES,
-  V2_DEFAULT_THRESHOLDS,
+  V2_MARKET_RATES,
   loadV2Rates,
   loadV2Thresholds,
   saveV2Rates,
 } from "./settings";
 import { analyzeV2Image, analyzeV2Pdf, validateV2File } from "./analysis-engine";
 import { applyOverride, averageColorCoverage, calculateV2Total, reviewCount } from "./pricing";
+
+const PAGE_SIZE = 6;
 
 const peso = (value: number) =>
   `₱${value.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -24,6 +42,22 @@ const OVERRIDE_OPTIONS: Array<{ value: "" | V2ColorClass; label: string }> = [
   { value: "FULL", label: "Full" },
 ];
 
+const DOT_COLORS: Record<V2ColorClass, string> = {
+  BW: "bg-gray-400",
+  LIGHT: "bg-green-500",
+  SEMI: "bg-amber-500",
+  FULL: "bg-red-500",
+};
+
+const SUMMARY_STYLE: Record<V2ColorClass, { chip: string; icon: string }> = {
+  BW: { chip: "bg-gray-100", icon: "text-gray-500" },
+  LIGHT: { chip: "bg-green-100", icon: "text-green-600" },
+  SEMI: { chip: "bg-amber-100", icon: "text-amber-600" },
+  FULL: { chip: "bg-red-100", icon: "text-red-500" },
+};
+
+type FilterKey = "ALL" | V2ColorClass;
+
 function rateFor(category: V2ColorClass, rates: typeof V2_DEFAULT_RATES): number {
   if (category === "BW") return rates.bw;
   if (category === "LIGHT") return rates.light;
@@ -31,43 +65,159 @@ function rateFor(category: V2ColorClass, rates: typeof V2_DEFAULT_RATES): number
   return rates.full;
 }
 
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 KB";
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function timeAgo(timestamp: number | null): string {
+  if (!timestamp) return "";
+  const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (seconds < 10) return "a few seconds ago";
+  if (seconds < 60) return `${seconds} seconds ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+}
+
+function pageNumbers(current: number, total: number): Array<number | "gap"> {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "gap", total];
+  if (current >= total - 3) return [1, "gap", total - 4, total - 3, total - 2, total - 1, total];
+  return [1, "gap", current - 1, current, current + 1, "gap", total];
+}
+
+function SectionHeader({
+  icon,
+  title,
+  subtitle,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-green-100 text-green-700">
+        {icon}
+      </span>
+      <div>
+        <h2 className="text-[17px] font-bold text-gray-900">{title}</h2>
+        <p className="mt-0.5 text-[13px] text-gray-500">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+function PriceField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[12px] font-medium text-gray-600">{label}</span>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-[14px] text-gray-900 outline-none focus:border-green-700 focus:ring-2 focus:ring-green-700/15"
+      />
+    </label>
+  );
+}
+
 export function PrintEstimatorV2() {
   const [rates, setRates] = useState(loadV2Rates);
   const [thresholds] = useState(loadV2Thresholds);
   const [pages, setPages] = useState<V2ClassifiedPage[]>([]);
   const [fileName, setFileName] = useState("");
+  const [fileMeta, setFileMeta] = useState({ kind: "", size: 0 });
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
   const [error, setError] = useState("");
+  const [analyzedAt, setAnalyzedAt] = useState<number | null>(null);
   const [selectedPage, setSelectedPage] = useState(1);
   const [checked, setChecked] = useState<Set<number>>(new Set());
-  const [copies, setCopies] = useState("1");
-  const [paperAdjustment, setPaperAdjustment] = useState("0");
-  const [addons, setAddons] = useState("0");
-  const [discount, setDiscount] = useState("0");
-  const [otherCharges, setOtherCharges] = useState("0");
+  const [filter, setFilter] = useState<FilterKey>("ALL");
+  const [search, setSearch] = useState("");
+  const [tablePage, setTablePage] = useState(1);
   const [showCalibration, setShowCalibration] = useState(false);
-  const [layoutNotice] = useState(
-    "PP-DocLayout-S loads from the hosted model asset when reachable; otherwise V2 uses a labeled heuristic fallback.",
-  );
+
+  // Pricing drafts (applied on Recalculate).
+  const [draftRates, setDraftRates] = useState({
+    bw: String(rates.bw),
+    light: String(rates.light),
+    semi: String(rates.semi),
+    full: String(rates.full),
+  });
+  const [draftCopies, setDraftCopies] = useState("1");
+  const [draftPaper, setDraftPaper] = useState("0");
+  const [draftAddons, setDraftAddons] = useState("0");
+  const [draftDiscount, setDraftDiscount] = useState("0");
+  const [appliedPricing, setAppliedPricing] = useState({
+    copies: 1,
+    paper: 0,
+    addons: 0,
+    discount: 0,
+  });
+
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const totals = useMemo(
     () =>
       calculateV2Total(pages, rates, {
-        copies: Number(copies) || 1,
-        paperAdjustmentPerPage: Number(paperAdjustment) || 0,
-        addons: Number(addons) || 0,
-        discount: Number(discount) || 0,
-        otherCharges: Number(otherCharges) || 0,
+        copies: appliedPricing.copies,
+        paperAdjustmentPerPage: appliedPricing.paper,
+        addons: appliedPricing.addons,
+        discount: appliedPricing.discount,
+        otherCharges: 0,
       }),
-    [pages, rates, copies, paperAdjustment, addons, discount, otherCharges],
+    [pages, rates, appliedPricing],
   );
   const avgColor = useMemo(() => averageColorCoverage(pages), [pages]);
   const needsReview = useMemo(() => reviewCount(pages), [pages]);
+
+  const counts = useMemo(() => {
+    const result: Record<V2ColorClass, number> = { BW: 0, LIGHT: 0, SEMI: 0, FULL: 0 };
+    for (const page of pages) {
+      if (page.status === "complete") result[page.finalCategory] += 1;
+    }
+    return result;
+  }, [pages]);
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return pages.filter((page) => {
+      if (filter !== "ALL" && page.finalCategory !== filter) return false;
+      if (!query) return true;
+      const haystack =
+        `${page.pageNumber} ${V2_COLOR_LABELS[page.finalCategory]} ${V2_CONTENT_LABELS[page.contentClass]} ${V2_COLOR_LABELS[page.detectedCategory]}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [pages, filter, search]);
+
+  const totalTablePages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safeTablePage = Math.min(tablePage, totalTablePages);
+  const visiblePages = filtered.slice((safeTablePage - 1) * PAGE_SIZE, safeTablePage * PAGE_SIZE);
   const activePage = pages.find((p) => p.pageNumber === selectedPage) ?? pages[0];
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [filter, search, pages.length]);
+
+  const progressPercent =
+    progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
 
   function handleFile(next: File | undefined) {
     if (!next) return;
@@ -77,12 +227,17 @@ export function PrintEstimatorV2() {
       setError(e instanceof Error ? e.message : "Unsupported file.");
       return;
     }
+    const name = next.name.toLowerCase();
+    const kind = next.type === "application/pdf" || name.endsWith(".pdf") ? "PDF" : "Image";
     setError("");
     setFile(next);
     setFileName(next.name);
+    setFileMeta({ kind, size: next.size });
     setPages([]);
     setChecked(new Set());
     setSelectedPage(1);
+    setTablePage(1);
+    setAnalyzedAt(null);
     setProgress({ completed: 0, total: 0 });
   }
 
@@ -92,6 +247,7 @@ export function PrintEstimatorV2() {
     setProcessing(true);
     setPages([]);
     setChecked(new Set());
+    setAnalyzedAt(null);
     const controller = new AbortController();
     abortRef.current = controller;
     try {
@@ -118,6 +274,8 @@ export function PrintEstimatorV2() {
         setProgress({ completed: 1, total: 1 });
       }
       setSelectedPage(1);
+      setTablePage(1);
+      setAnalyzedAt(Date.now());
     } catch (e) {
       if (e instanceof Error && e.message === "Analysis was cancelled.") {
         setError("Analysis was cancelled.");
@@ -139,28 +297,6 @@ export function PrintEstimatorV2() {
     );
   }
 
-  function bulkSet(category: V2ColorClass) {
-    setPages((current) =>
-      current.map((p) => (checked.has(p.pageNumber) ? applyOverride(p, category) : p)),
-    );
-  }
-
-  function bulkClear() {
-    setPages((current) =>
-      current.map((p) => (checked.has(p.pageNumber) ? applyOverride(p, null) : p)),
-    );
-  }
-
-  function selectAll(predicate: (p: V2ClassifiedPage) => boolean) {
-    setChecked(new Set(pages.filter(predicate).map((p) => p.pageNumber)));
-  }
-
-  function updateRate(key: keyof typeof V2_DEFAULT_RATES, value: string) {
-    const next = { ...rates, [key]: Number(value) || 0 };
-    setRates(next);
-    saveV2Rates(next);
-  }
-
   function toggleChecked(pageNumber: number) {
     setChecked((current) => {
       const next = new Set(current);
@@ -170,380 +306,591 @@ export function PrintEstimatorV2() {
     });
   }
 
-  const progressPercent =
-    progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
-  const layoutStatus =
-    pages.length === 0
-      ? processing
-        ? "loading"
-        : "idle"
-      : pages.some((p) => p.layoutModel === "pp-doclayout")
-        ? "loaded"
-        : "fallback";
-  const layoutStatusLabel =
-    layoutStatus === "loaded"
-      ? "Layout model: PP-DocLayout-S loaded"
-      : layoutStatus === "loading"
-        ? "Layout model: loading…"
-        : layoutStatus === "fallback"
-          ? "Layout model: heuristic fallback (model not used)"
-          : "Layout model: not run yet";
+  function toggleVisible() {
+    setChecked((current) => {
+      const visibleIds = visiblePages.map((p) => p.pageNumber);
+      const allSelected = visibleIds.length > 0 && visibleIds.every((id) => current.has(id));
+      const next = new Set(current);
+      if (allSelected) {
+        for (const id of visibleIds) next.delete(id);
+      } else {
+        for (const id of visibleIds) next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function recalculate() {
+    const nextRates = {
+      bw: Number(draftRates.bw) || 0,
+      light: Number(draftRates.light) || 0,
+      semi: Number(draftRates.semi) || 0,
+      full: Number(draftRates.full) || 0,
+    };
+    setRates(nextRates);
+    saveV2Rates(nextRates);
+    setAppliedPricing({
+      copies: Math.max(1, Math.floor(Number(draftCopies) || 1)),
+      paper: Number(draftPaper) || 0,
+      addons: Number(draftAddons) || 0,
+      discount: Number(draftDiscount) || 0,
+    });
+  }
+
+  function useMarketRates() {
+    setRates(V2_MARKET_RATES);
+    setDraftRates({
+      bw: String(V2_MARKET_RATES.bw),
+      light: String(V2_MARKET_RATES.light),
+      semi: String(V2_MARKET_RATES.semi),
+      full: String(V2_MARKET_RATES.full),
+    });
+    saveV2Rates(V2_MARKET_RATES);
+  }
+
+  const visibleIds = visiblePages.map((p) => p.pageNumber);
+  const allVisibleChecked =
+    visibleIds.length > 0 && visibleIds.every((id) => checked.has(id));
+
+  const pills: Array<{ key: FilterKey; label: string; count: number }> = [
+    { key: "ALL", label: "All", count: pages.filter((p) => p.status === "complete").length },
+    { key: "BW", label: "B&W", count: counts.BW },
+    { key: "LIGHT", label: "Light", count: counts.LIGHT },
+    { key: "SEMI", label: "Semi", count: counts.SEMI },
+    { key: "FULL", label: "Full", count: counts.FULL },
+  ];
 
   return (
-    <main className="mx-auto w-full max-w-[1280px] px-7 py-10 pb-24 max-[760px]:px-5">
-      <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-        Production / print job · V2
-      </div>
-      <h1 className="mt-2 text-[42px] font-extrabold leading-none tracking-tight max-[760px]:text-[34px]">
-        Print price calculator V2
-      </h1>
-      <p className="mt-2 max-w-[640px] text-sm text-muted-foreground">
-        Local page classification: B&W, Light, Semi, and Full Color with Text, Mixed, Image, and
-        Scanned content. Overrides never destroy the automatic result.
-      </p>
-      <p className="mt-2 max-w-[640px] text-xs text-muted-foreground">{layoutNotice}</p>
-      <p
-        className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-bold ${
-          layoutStatus === "loaded"
-            ? "bg-[#e3f0e0] text-[#2f6b33]"
-            : layoutStatus === "fallback"
-              ? "bg-[#fdeecd] text-[#8a5a00]"
-              : "bg-[#eef2e8] text-[#5f7d4f]"
-        }`}
-        role="status"
-      >
-        {layoutStatusLabel}
-      </p>
-
-      <div className="mt-6 rounded-xl border border-[#e8d9a8] bg-[#fdf8e7] px-4 py-3 text-[13px] text-[#7a5c00]">
-        V2 is a separate workspace. The existing estimator at <strong>/print-estimator</strong> is
-        unchanged.
-      </div>
-
-      <section className="mt-6 border border-[#cbd8c3] bg-[#fbfcf8] p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-bold">01 · Document</h2>
-          {processing && progress.total > 0 && (
-            <span className="text-xs text-primary">
-              Analyzing pages… {progress.completed} / {progress.total} ({progressPercent}%)
-            </span>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={processing}
-          className="mt-4 flex min-h-[120px] w-full flex-col items-center justify-center gap-2 border border-dashed border-[#b7c7ad] bg-[#f2f6ee] disabled:opacity-70"
-        >
-          <strong>{fileName || "Drop a PDF or image here"}</strong>
-          <span className="text-xs text-muted-foreground">
-            PDF, PNG, JPG, or WEBP · PDF pages analyzed at ~120 DPI · max 500 pages
-          </span>
-          {processing && progress.total > 0 && (
-            <span className="mt-2 h-1 w-[70%] bg-[#dce7d5]">
-              <b className="block h-full bg-[#5d7052]" style={{ width: `${progressPercent}%` }} />
-            </span>
-          )}
-        </button>
-        <input
-          ref={inputRef}
-          hidden
-          type="file"
-          accept="image/*,.pdf,application/pdf"
-          onChange={(event) => handleFile(event.target.files?.[0] ?? undefined)}
-        />
-        {error && <div className="mt-3 bg-[#f3e1dc] p-3 text-xs text-[#8b4b44]">{error}</div>}
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={analyze}
-            disabled={!file || processing}
-            className="border border-[#5d7052] bg-[#5d7052] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-          >
-            {pages.length > 0 ? "Re-analyze file" : "Analyze file"}
-          </button>
-          {processing && (
-            <button
-              type="button"
-              onClick={() => abortRef.current?.abort()}
-              className="border border-[#8b4b44] px-4 py-2 text-xs font-bold text-[#8b4b44]"
-            >
-              Cancel
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              setFile(null);
-              setFileName("");
-              setPages([]);
-              setChecked(new Set());
-              setProgress({ completed: 0, total: 0 });
-            }}
-            disabled={processing}
-            className="px-3 py-2 text-xs text-muted-foreground underline disabled:opacity-50"
-          >
-            Remove
-          </button>
-        </div>
-      </section>
-
-      {pages.length > 0 && (
-        <>
-          <section className="mt-6 border border-[#cbd8c3] bg-[#fbfcf8] p-6">
-            <h2 className="text-xl font-bold">02 · Document summary</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {fileName} · {pages.length} page{pages.length === 1 ? "" : "s"} · average color
-              coverage {avgColor.toFixed(1)}% · {needsReview} page{needsReview === 1 ? "" : "s"}{" "}
-              requiring review
+    <main className="min-h-screen bg-[#f3f4f1] pb-20 text-gray-900">
+      <div className="mx-auto w-full max-w-[1280px] px-5 py-8">
+        {/* Header */}
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="max-w-[640px]">
+            <h1 className="text-[32px] font-extrabold leading-tight tracking-tight">
+              Print price calculator V2
+            </h1>
+            <p className="mt-2 text-[13.5px] leading-relaxed text-gray-500">
+              Upload a PDF or image file and we&rsquo;ll analyze each page to estimate your print
+              cost. Our tool detects content, color coverage, and layout to give you accurate
+              pricing.
             </p>
-            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-              {(["BW", "LIGHT", "SEMI", "FULL"] as V2ColorClass[]).map((category) => (
-                <div key={category} className="border border-[#dce7d5] bg-white p-4">
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    {V2_COLOR_LABELS[category]}
-                  </div>
-                  <div className="mt-1 text-3xl font-extrabold">{totals.counts[category]}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {peso(totals.subtotals[category])} at {peso(rateFor(category, rates))}/page
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+          </div>
+          
+        </div>
 
-          <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <section className="border border-[#cbd8c3] bg-[#fbfcf8] p-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-xl font-bold">03 · Pages</h2>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <button type="button" onClick={() => bulkSet("BW")} className="border px-2 py-1">Set B&W</button>
-                  <button type="button" onClick={() => bulkSet("LIGHT")} className="border px-2 py-1">Set Light</button>
-                  <button type="button" onClick={() => bulkSet("SEMI")} className="border px-2 py-1">Set Semi</button>
-                  <button type="button" onClick={() => bulkSet("FULL")} className="border px-2 py-1">Set Full</button>
-                  <button type="button" onClick={bulkClear} className="border px-2 py-1">Clear overrides</button>
+        <div className="mt-6 grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+          {/* Main column */}
+          <div className="min-w-0 space-y-5">
+            {/* 01 Document */}
+            <section className="rounded-2xl border border-gray-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <SectionHeader
+                icon={<Upload className="size-4" />}
+                title="01 · Document"
+                subtitle="Upload a document to analyze. We support PDF, PNG, JPG and more."
+              />
+              {!file ? (
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="mt-5 flex min-h-[110px] w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 text-gray-700 transition-colors hover:border-green-600 hover:bg-green-50/50"
+                >
+                  <strong className="text-[14px]">Drop a PDF or image here, or click to browse</strong>
+                  <span className="text-[12px] text-gray-500">
+                    PDF, PNG, JPG, or WEBP · analyzed at ~120 DPI · max 500 pages
+                  </span>
+                </button>
+              ) : (
+                <div className="mt-5 flex flex-wrap items-center gap-3 rounded-xl border border-gray-200/70 bg-white px-4 py-3.5">
+                  <span
+                    className={`grid h-11 w-10 shrink-0 place-items-center rounded-lg text-[11px] font-extrabold text-white ${
+                      fileMeta.kind === "PDF" ? "bg-red-500" : "bg-slate-500"
+                    }`}
+                  >
+                    {fileMeta.kind === "PDF" ? "PDF" : "IMG"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-bold">{fileName}</p>
+                    <p className="mt-0.5 truncate text-[12px] text-gray-500">
+                      {fileMeta.kind}
+                      {pages.length > 0 && ` · ${pages.length} pages`} · {formatBytes(fileMeta.size)}
+                      {analyzedAt && ` · Analyzed ${timeAgo(analyzedAt)}`}
+                    </p>
+                  </div>
+                  {pages.length > 0 && !processing && (
+                    <CheckCircle2 className="size-6 shrink-0 text-green-500" />
+                  )}
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={analyze}
+                      disabled={processing}
+                      className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#23402f] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-[#1a3124] disabled:opacity-50"
+                    >
+                      <RotateCw className="size-4" />
+                      {pages.length > 0 ? "Re-analyze" : "Analyze file"}
+                    </button>
+                    {processing && (
+                      <button
+                        type="button"
+                        onClick={() => abortRef.current?.abort()}
+                        className="inline-flex h-10 items-center rounded-lg border border-red-200 px-3 text-[13px] font-semibold text-red-600"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFile(null);
+                        setFileName("");
+                        setPages([]);
+                        setChecked(new Set());
+                        setAnalyzedAt(null);
+                        setProgress({ completed: 0, total: 0 });
+                      }}
+                      disabled={processing}
+                      className="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-50 disabled:opacity-50"
+                    >
+                      <Trash2 className="size-4" />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              )}
+              <input
+                ref={inputRef}
+                hidden
+                type="file"
+                accept="image/*,.pdf,application/pdf"
+                onChange={(event) => handleFile(event.target.files?.[0] ?? undefined)}
+              />
+              {processing && progress.total > 0 && (
+                <div className="mt-3">
+                  <div className="flex justify-between text-[12px] text-gray-500">
+                    <span>
+                      Analyzing pages… {progress.completed} / {progress.total}
+                    </span>
+                    <span>{progressPercent}%</span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className="h-full rounded-full bg-green-700 transition-[width]"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              {error && (
+                <div className="mt-3 rounded-lg bg-red-50 p-3 text-[12px] text-red-700">{error}</div>
+              )}
+            </section>
+
+            {/* 02 Document summary */}
+            <section className="rounded-2xl border border-gray-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                <SectionHeader
+                  icon={<Tag className="size-4" />}
+                  title="02 · Document summary"
+                  subtitle="Detected page types and estimated subtotal based on current rates."
+                />
+                <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  {(["BW", "LIGHT", "SEMI", "FULL"] as V2ColorClass[]).map((category) => (
+                    <div
+                      key={category}
+                      className="flex items-center gap-3 rounded-xl border border-gray-200/70 bg-white p-4"
+                    >
+                      <span
+                        className={`grid size-10 shrink-0 place-items-center rounded-lg ${SUMMARY_STYLE[category].chip}`}
+                      >
+                        <FileText className={`size-5 ${SUMMARY_STYLE[category].icon}`} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-[12px] text-gray-500">
+                          {V2_COLOR_LABELS[category]}
+                        </p>
+                        <p className="text-[22px] font-extrabold leading-tight">
+                          {counts[category]}
+                        </p>
+                        <p className="text-[12px] text-gray-500">
+                          {peso(totals.subtotals[category] * totals.copies)} subtotal
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-[12px] text-gray-500">
+                  Average color coverage {avgColor.toFixed(1)}% · {needsReview} page
+                  {needsReview === 1 ? "" : "s"} requiring review
+                </p>
+            </section>
+
+            {/* 03 Pages */}
+            <section className="rounded-2xl border border-gray-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                <SectionHeader
+                  icon={<Layers className="size-4" />}
+                  title="03 · Pages"
+                  subtitle="Review and edit page classification, or override rates if needed."
+                />
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  <div className="relative min-w-[200px] flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="search"
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                      placeholder="Search pages..."
+                      disabled={pages.length === 0}
+                      className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-[13px] outline-none placeholder:text-gray-400 focus:border-green-700 focus:ring-2 focus:ring-green-700/15 disabled:bg-gray-50 disabled:text-gray-400"
+                    />
+                  </div>
+                  {pills.map((pill) => (
+                    <button
+                      key={pill.key}
+                      type="button"
+                      onClick={() => setFilter(pill.key)}
+                      disabled={pages.length === 0}
+                      className={`h-10 rounded-lg px-3.5 text-[13px] font-medium transition-colors disabled:opacity-50 ${
+                        filter === pill.key
+                          ? "bg-[#23402f] text-white"
+                          : "border border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                      }`}
+                    >
+                      {pill.label} ({pill.count})
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="grid size-10 place-items-center rounded-lg border border-gray-200">
+                    <input
+                      type="checkbox"
+                      checked={allVisibleChecked}
+                      onChange={toggleVisible}
+                      disabled={visibleIds.length === 0}
+                      aria-label="Select visible pages"
+                      className="size-4 accent-green-800 disabled:opacity-40"
+                    />
+                  </span>
+                  <span className="ml-1 text-[12px] text-gray-500">{checked.size} selected</span>
+                </div>
+
+                <div className="mt-3 max-h-[560px] overflow-auto rounded-xl border border-gray-200/70 [scrollbar-color:#cbd5c8_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
+                  <table className="w-full min-w-[700px] border-collapse text-[13px]">
+                    <thead className="sticky top-0 z-[1]">
+                      <tr className="bg-[#f4f6f2] text-left text-[12px] text-gray-500">
+                        <th className="bg-[#f4f6f2] px-3 py-3 font-medium">Page</th>
+                        <th className="bg-[#f4f6f2] px-3 py-3 font-medium">Classification</th>
+                        <th className="bg-[#f4f6f2] px-3 py-3 font-medium">Color %</th>
+                        <th className="bg-[#f4f6f2] px-3 py-3 font-medium">Content</th>
+                        <th className="bg-[#f4f6f2] px-3 py-3 font-medium">Rate</th>
+                        <th className="bg-[#f4f6f2] px-3 py-3 font-medium">Override</th>
+                        <th className="w-10 bg-[#f4f6f2] px-3 py-3 font-medium" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visiblePages.map((page) => (
+                        <tr
+                          key={page.pageNumber}
+                          onClick={() => setSelectedPage(page.pageNumber)}
+                          className={`cursor-pointer border-t border-gray-100 transition-colors hover:bg-green-50/40 ${
+                            page.pageNumber === selectedPage ? "bg-green-50/60" : "bg-white"
+                          }`}
+                        >
+                          <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={checked.has(page.pageNumber)}
+                              onChange={() => toggleChecked(page.pageNumber)}
+                              aria-label={`Select page ${page.pageNumber}`}
+                              className="size-4 accent-green-800"
+                            />
+                          </td>
+                          <td className="px-3 py-3 font-medium">{page.pageNumber}</td>
+                          <td className="px-3 py-3">
+                            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                              <span className={`size-2 rounded-full ${DOT_COLORS[page.finalCategory]}`} />
+                              {V2_COLOR_LABELS[page.finalCategory]} {V2_CONTENT_LABELS[page.contentClass]}
+                              {page.overrideCategory && (
+                                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-800">
+                                  override
+                                </span>
+                              )}
+                            </span>
+                          </td>
+                          <td className="px-3 py-3 tabular-nums">
+                            {(page.colorCoverage * 100).toFixed(1)}%
+                          </td>
+                          <td className="px-3 py-3">{V2_CONTENT_LABELS[page.contentClass]}</td>
+                          <td className="px-3 py-3 tabular-nums">
+                            {peso(rateFor(page.finalCategory, rates))}
+                          </td>
+                          <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                            <select
+                              value={page.overrideCategory ?? ""}
+                              onChange={(e) =>
+                                setOverride(page.pageNumber, e.target.value as "" | V2ColorClass)
+                              }
+                              aria-label={`Override page ${page.pageNumber}`}
+                              className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-[13px] outline-none focus:border-green-700"
+                            >
+                              {OVERRIDE_OPTIONS.map((option) => (
+                                <option key={option.value || "auto"} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                        </tr>
+                      ))}
+                      {visiblePages.length === 0 && (
+                        <tr className="border-t border-gray-100">
+                          <td colSpan={7} className="px-3 py-8 text-center text-[13px] text-gray-500">
+                            No pages match the current search or filter.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-[12px] text-gray-500">
+                    Showing {visiblePages.length} of {filtered.length} pages
+                  </p>
+                  {totalTablePages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={safeTablePage <= 1}
+                        onClick={() => setTablePage((v) => Math.max(1, v - 1))}
+                        aria-label="Previous table page"
+                        className="grid size-8 place-items-center rounded-lg border border-gray-200 text-gray-600 disabled:opacity-40"
+                      >
+                        <ChevronLeft className="size-4" />
+                      </button>
+                      {pageNumbers(safeTablePage, totalTablePages).map((item, index) =>
+                        item === "gap" ? (
+                          <span key={`gap-${index}`} className="px-1 text-[13px] text-gray-400">
+                            …
+                          </span>
+                        ) : (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => setTablePage(item)}
+                            className={`size-8 rounded-lg text-[13px] font-medium ${
+                              item === safeTablePage
+                                ? "bg-[#23402f] text-white"
+                                : "border border-gray-200 text-gray-600 hover:border-gray-300"
+                            }`}
+                          >
+                            {item}
+                          </button>
+                        ),
+                      )}
+                      <button
+                        type="button"
+                        disabled={safeTablePage >= totalTablePages}
+                        onClick={() => setTablePage((v) => Math.min(totalTablePages, v + 1))}
+                        aria-label="Next table page"
+                        className="grid size-8 place-items-center rounded-lg border border-gray-200 text-gray-600 disabled:opacity-40"
+                      >
+                        <ChevronRight className="size-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+            </section>
+
+          </div>
+
+          {/* Sidebar */}
+          <div className="min-w-0 space-y-5">
+            {/* Pricing */}
+            <section className="rounded-2xl border border-gray-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <div className="flex items-start gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-green-100 text-green-700">
+                  <Receipt className="size-4" />
+                </span>
+                <div>
+                  <h2 className="text-[17px] font-bold text-gray-900">Pricing</h2>
+                  <p className="mt-0.5 text-[13px] text-gray-500">Set your print rates and options.</p>
                 </div>
               </div>
-              <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
-                <button type="button" className="underline" onClick={() => selectAll(() => true)}>Select all</button>
-                <button type="button" className="underline" onClick={() => selectAll((p) => p.detectedCategory === "BW")}>Select all B&W</button>
-                <button type="button" className="underline" onClick={() => selectAll((p) => p.detectedCategory === "LIGHT")}>Select all Light</button>
-                <button type="button" className="underline" onClick={() => selectAll((p) => p.reviewRecommended)}>Select low-confidence</button>
-                <button type="button" className="underline" onClick={() => setChecked(new Set())}>Clear selection</button>
-                <span className="ml-auto">{checked.size} selected</span>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <PriceField
+                  label="B&W rate (₱)"
+                  value={draftRates.bw}
+                  onChange={(v) => setDraftRates((d) => ({ ...d, bw: v }))}
+                />
+                <PriceField
+                  label="Light rate (₱)"
+                  value={draftRates.light}
+                  onChange={(v) => setDraftRates((d) => ({ ...d, light: v }))}
+                />
+                <PriceField
+                  label="Semi rate (₱)"
+                  value={draftRates.semi}
+                  onChange={(v) => setDraftRates((d) => ({ ...d, semi: v }))}
+                />
+                <PriceField
+                  label="Full rate (₱)"
+                  value={draftRates.full}
+                  onChange={(v) => setDraftRates((d) => ({ ...d, full: v }))}
+                />
+                <PriceField label="Copies" value={draftCopies} onChange={setDraftCopies} />
+                <PriceField label="Paper price (₱)" value={draftPaper} onChange={setDraftPaper} />
+                <PriceField label="Add-ons (₱)" value={draftAddons} onChange={setDraftAddons} />
+                <PriceField label="Discount (₱)" value={draftDiscount} onChange={setDraftDiscount} />
               </div>
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full min-w-[760px] border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-[#eef4e9] text-left">
-                      <th className="border p-2">Select</th>
-                      <th className="border p-2">Page</th>
-                      <th className="border p-2">Classification</th>
-                      <th className="border p-2">Confidence</th>
-                      <th className="border p-2">Color %</th>
-                      <th className="border p-2">Content</th>
-                      <th className="border p-2">Layout</th>
-                      <th className="border p-2">Rate</th>
-                      <th className="border p-2">Override</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pages.map((page) => (
-                      <tr
-                        key={page.pageNumber}
-                        onClick={() => setSelectedPage(page.pageNumber)}
-                        className={`cursor-pointer ${page.pageNumber === selectedPage ? "bg-[#e4edde]" : "bg-white"}`}
-                      >
-                        <td className="border p-2" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={checked.has(page.pageNumber)}
-                            onChange={() => toggleChecked(page.pageNumber)}
-                            aria-label={`Select page ${page.pageNumber}`}
-                          />
-                        </td>
-                        <td className="border p-2 font-bold">{page.pageNumber}</td>
-                        <td className="border p-2">
-                          {V2_COLOR_LABELS[page.finalCategory]} {V2_CONTENT_LABELS[page.contentClass]}
-                          {page.overrideCategory && (
-                            <span className="ml-1 rounded bg-[#fef3c7] px-1">override</span>
-                          )}
-                        </td>
-                        <td className="border p-2">
-                          {Math.round(page.confidence * 100)}%
-                          {page.reviewRecommended && <span className="ml-1">⚠ review</span>}
-                        </td>
-                        <td className="border p-2">{(page.colorCoverage * 100).toFixed(1)}%</td>
-                        <td className="border p-2">{V2_CONTENT_LABELS[page.contentClass]}</td>
-                        <td className="border p-2">
-                          {page.layoutModel === "pp-doclayout" ? (
-                            <span className="rounded bg-[#e3f0e0] px-1">model</span>
-                          ) : page.layoutModel === "heuristic-fallback" ? (
-                            <span className="rounded bg-[#fdeecd] px-1">fallback</span>
-                          ) : (
-                            <span>{page.layoutModel}</span>
-                          )}
-                        </td>
-                        <td className="border p-2">{peso(rateFor(page.finalCategory, rates))}</td>
-                        <td className="border p-2" onClick={(e) => e.stopPropagation()}>
-                          <select
-                            value={page.overrideCategory ?? ""}
-                            onChange={(e) => setOverride(page.pageNumber, e.target.value as "" | V2ColorClass)}
-                            aria-label={`Override page ${page.pageNumber}`}
-                            className="border bg-white px-1 py-1"
-                          >
-                            {OVERRIDE_OPTIONS.map((option) => (
-                              <option key={option.value || "auto"} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <button
+                type="button"
+                onClick={useMarketRates}
+                className="mt-4 h-10 w-full rounded-lg border border-green-700/30 bg-green-50 px-4 text-[13px] font-semibold text-green-800 transition-colors hover:bg-green-100"
+              >
+                Use market rates
+              </button>
+              <div className="mt-4 rounded-xl bg-[#e9f1e4] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[12px] font-medium text-gray-600">Estimated total</p>
+                    <p className="mt-1 text-[28px] font-extrabold leading-none text-green-800">
+                      {peso(totals.grandTotal)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={recalculate}
+                    className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg bg-[#23402f] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-[#1a3124]"
+                  >
+                    <Calculator className="size-4" />
+                    Recalculate
+                  </button>
+                </div>
+                <p className="mt-2 text-right text-[11px] text-gray-500">
+                  Based on current rates and {totals.printedPages} pages
+                </p>
               </div>
             </section>
 
-            <aside className="space-y-6 lg:sticky lg:top-5">
-              <section className="border border-[#cbd8c3] bg-[#fbfcf8] p-5">
-                <h3 className="font-bold">Preview</h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Page {selectedPage} / {pages.length}
-                </p>
-                <div className="mt-3 flex gap-2">
+            {/* Preview */}
+            {activePage && (
+              <section className="rounded-2xl border border-gray-200/70 bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-green-100 text-green-700">
+                      <Eye className="size-4" />
+                    </span>
+                    <div>
+                      <h2 className="text-[17px] font-bold text-gray-900">Preview</h2>
+                      <p className="mt-0.5 text-[13px] text-gray-500">
+                        See the selected page and its analysis details.
+                      </p>
+                    </div>
+                  </div>
+                  <p className="shrink-0 text-[12px] text-gray-500">
+                    Page {activePage.pageNumber} of {pages.length}
+                  </p>
+                </div>
+                <div className="mt-4 flex gap-2">
                   <button
                     type="button"
-                    disabled={selectedPage <= 1}
+                    disabled={activePage.pageNumber <= 1}
                     onClick={() => setSelectedPage((v) => Math.max(1, v - 1))}
-                    className="border px-3 py-1 text-xs disabled:opacity-40"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-gray-200 px-4 text-[13px] font-medium text-gray-600 disabled:opacity-40"
                   >
+                    <ChevronLeft className="size-4" />
                     Previous
                   </button>
                   <button
                     type="button"
-                    disabled={selectedPage >= pages.length}
+                    disabled={activePage.pageNumber >= pages.length}
                     onClick={() => setSelectedPage((v) => Math.min(pages.length, v + 1))}
-                    className="border px-3 py-1 text-xs disabled:opacity-40"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-gray-200 px-4 text-[13px] font-medium text-gray-600 disabled:opacity-40"
                   >
                     Next
+                    <ChevronRight className="size-4" />
                   </button>
                 </div>
-                <div className="mt-3 min-h-[220px] bg-white p-2">
-                  {activePage?.previewUrl ? (
-                    <img src={activePage.previewUrl} alt={`Page ${activePage.pageNumber} preview`} className="w-full" />
-                  ) : (
-                    <p className="p-6 text-center text-xs text-muted-foreground">No preview available.</p>
-                  )}
-                </div>
-                {activePage && (
-                  <dl className="mt-3 space-y-1 text-xs">
-                    <div className="flex justify-between"><dt>Detected</dt><dd>{V2_COLOR_LABELS[activePage.detectedCategory]}</dd></div>
-                    <div className="flex justify-between"><dt>Final</dt><dd>{V2_COLOR_LABELS[activePage.finalCategory]}</dd></div>
-                    <div className="flex justify-between"><dt>Content</dt><dd>{V2_CONTENT_LABELS[activePage.contentClass]}</dd></div>
-                    <div className="flex justify-between"><dt>Confidence</dt><dd>{Math.round(activePage.confidence * 100)}%</dd></div>
-                    <div className="flex justify-between"><dt>Layout</dt><dd>{activePage.layoutModel}</dd></div>
-                    <div className="flex justify-between"><dt>Ink</dt><dd>{(activePage.inkCoverage * 100).toFixed(1)}%</dd></div>
-                    <div className="flex justify-between"><dt>Color</dt><dd>{(activePage.colorCoverage * 100).toFixed(1)}%</dd></div>
+                <div className="mt-4 flex gap-4">
+                  <div className="w-[46%] shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                    {activePage.previewUrl ? (
+                      <img
+                        src={activePage.previewUrl}
+                        alt={`Page ${activePage.pageNumber} preview`}
+                        className="h-auto w-full"
+                      />
+                    ) : (
+                      <p className="p-6 text-center text-[12px] text-gray-400">
+                        No preview available.
+                      </p>
+                    )}
+                  </div>
+                  <dl className="min-w-0 flex-1 space-y-2.5 text-[12.5px]">
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-gray-500">Detected</dt>
+                      <dd className="inline-flex items-center gap-1.5 font-medium">
+                        <span className={`size-2 rounded-full ${DOT_COLORS[activePage.finalCategory]}`} />
+                        {V2_COLOR_LABELS[activePage.finalCategory]} {V2_CONTENT_LABELS[activePage.contentClass]}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-gray-500">Confidence</dt>
+                      <dd className="font-medium tabular-nums">
+                        {Math.round(activePage.confidence * 100)}%
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-gray-500">Color coverage</dt>
+                      <dd className="font-medium tabular-nums">
+                        {(activePage.colorCoverage * 100).toFixed(1)}%
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-gray-500">Content</dt>
+                      <dd className="font-medium">{V2_CONTENT_LABELS[activePage.contentClass]}</dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-gray-500">Layout</dt>
+                      <dd className="font-medium">
+                        {activePage.layoutModel === "pp-doclayout"
+                          ? "Model"
+                          : activePage.layoutModel === "heuristic-fallback"
+                            ? "Fallback"
+                            : "—"}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-gray-500">Rate</dt>
+                      <dd className="font-bold tabular-nums">
+                        {peso(rateFor(activePage.finalCategory, rates))}
+                      </dd>
+                    </div>
                   </dl>
-                )}
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowCalibration((v) => !v)}
-                  className="mt-3 w-full border px-3 py-2 text-xs font-bold"
+                  className="mt-4 w-full rounded-lg border border-gray-200 px-3 py-2 text-[12px] font-semibold text-gray-600 hover:border-gray-300"
                 >
                   {showCalibration ? "Hide calibration" : "Show calibration"}
                 </button>
-                {showCalibration && activePage && (
-                  <div className="mt-3 bg-[#26372b] p-3 text-[11px] leading-relaxed text-[#d7e6d3]">
+                {showCalibration && (
+                  <div className="mt-3 rounded-lg bg-[#23402f] p-3 font-mono text-[11px] leading-relaxed text-green-100">
                     <div>Color coverage: {(activePage.colorCoverage * 100).toFixed(2)}%</div>
                     <div>Ink coverage: {(activePage.inkCoverage * 100).toFixed(2)}%</div>
                     <div>B&W coverage: {(activePage.bwCoverage * 100).toFixed(2)}%</div>
                     <div>White coverage: {(activePage.whiteCoverage * 100).toFixed(2)}%</div>
-                    <div>Average saturation: {activePage.averageSaturation.toFixed(3)}</div>
-                    <div>Average brightness: {activePage.averageBrightness.toFixed(3)}</div>
+                    <div>Avg saturation: {activePage.averageSaturation.toFixed(3)}</div>
+                    <div>Avg brightness: {activePage.averageBrightness.toFixed(3)}</div>
                     <div>Text coverage: {(activePage.textCoverage * 100).toFixed(1)}%</div>
                     <div>Image coverage: {(activePage.imageCoverage * 100).toFixed(1)}%</div>
-                    <div>Thresholds: B&W&lt;{(thresholds.bwMaxColorCoverage * 100).toFixed(1)}% · Light&lt;{(thresholds.lightMaxColorCoverage * 100).toFixed(1)}% · Semi&lt;{(thresholds.semiMaxColorCoverage * 100).toFixed(1)}%</div>
                   </div>
                 )}
               </section>
-
-              <section className="border border-[#26372b] bg-[#26372b] p-5 text-[#f7faf4]">
-                <h3 className="font-bold">Pricing</h3>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                  {(["bw", "light", "semi", "full"] as const).map((key) => (
-                    <label key={key} className="flex flex-col gap-1">
-                      <span className="uppercase text-[#afbea9]">{key} rate</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={String(rates[key])}
-                        onChange={(e) => updateRate(key, e.target.value)}
-                        className="h-9 rounded border border-[#5f745f] bg-[#34463a] px-2 text-white"
-                      />
-                    </label>
-                  ))}
-                  <label className="flex flex-col gap-1">
-                    <span className="uppercase text-[#afbea9]">Copies</span>
-                    <input type="number" min="1" step="1" value={copies} onChange={(e) => setCopies(e.target.value)} className="h-9 rounded border border-[#5f745f] bg-[#34463a] px-2 text-white" />
-                  </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="uppercase text-[#afbea9]">Paper/page</span>
-                    <input type="number" min="0" step="0.01" value={paperAdjustment} onChange={(e) => setPaperAdjustment(e.target.value)} className="h-9 rounded border border-[#5f745f] bg-[#34463a] px-2 text-white" />
-                  </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="uppercase text-[#afbea9]">Add-ons</span>
-                    <input type="number" min="0" step="0.01" value={addons} onChange={(e) => setAddons(e.target.value)} className="h-9 rounded border border-[#5f745f] bg-[#34463a] px-2 text-white" />
-                  </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="uppercase text-[#afbea9]">Other</span>
-                    <input type="number" min="0" step="0.01" value={otherCharges} onChange={(e) => setOtherCharges(e.target.value)} className="h-9 rounded border border-[#5f745f] bg-[#34463a] px-2 text-white" />
-                  </label>
-                  <label className="col-span-2 flex flex-col gap-1">
-                    <span className="uppercase text-[#afbea9]">Discount</span>
-                    <input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} className="h-9 rounded border border-[#5f745f] bg-[#34463a] px-2 text-white" />
-                  </label>
-                </div>
-                <div className="mt-4 space-y-1 text-xs">
-                  <div className="flex justify-between"><span>B&W {totals.counts.BW} × {peso(rates.bw)}</span><b>{peso(totals.subtotals.BW * totals.copies)}</b></div>
-                  <div className="flex justify-between"><span>Light {totals.counts.LIGHT} × {peso(rates.light)}</span><b>{peso(totals.subtotals.LIGHT * totals.copies)}</b></div>
-                  <div className="flex justify-between"><span>Semi {totals.counts.SEMI} × {peso(rates.semi)}</span><b>{peso(totals.subtotals.SEMI * totals.copies)}</b></div>
-                  <div className="flex justify-between"><span>Full {totals.counts.FULL} × {peso(rates.full)}</span><b>{peso(totals.subtotals.FULL * totals.copies)}</b></div>
-                  <div className="flex justify-between text-[#afbea9]"><span>Printed pages</span><b>{totals.printedPages}</b></div>
-                  {totals.paperAdjustment > 0 && (
-                    <div className="flex justify-between"><span>Paper adjustment</span><b>{peso(totals.paperAdjustment)}</b></div>
-                  )}
-                  {totals.discountAmount > 0 && (
-                    <div className="flex justify-between"><span>Discount</span><b>-{peso(totals.discountAmount)}</b></div>
-                  )}
-                </div>
-                <div className="mt-4 bg-[#5d7052] p-4">
-                  <span className="block text-[11px] text-[#d7e6d3]">Total price</span>
-                  <strong className="mt-1 block text-3xl">{peso(totals.grandTotal)}</strong>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRates({ ...V2_DEFAULT_RATES });
-                    saveV2Rates({ ...V2_DEFAULT_RATES });
-                  }}
-                  className="mt-3 w-full border border-[#5f745f] px-3 py-2 text-xs"
-                >
-                  Restore default rates ₱3 / ₱4 / ₱6 / ₱10
-                </button>
-                <p className="mt-2 text-[10px] leading-relaxed text-[#9dad9f]">
-                  Threshold defaults: B&W&lt;{(V2_DEFAULT_THRESHOLDS.bwMaxColorCoverage * 100).toFixed(0)}% ·
-                  Light&lt;{(V2_DEFAULT_THRESHOLDS.lightMaxColorCoverage * 100).toFixed(0)}% ·
-                  Semi&lt;{(V2_DEFAULT_THRESHOLDS.semiMaxColorCoverage * 100).toFixed(0)}%.
-                </p>
-              </section>
-            </aside>
+            )}
           </div>
-        </>
-      )}
+        </div>
+      </div>
     </main>
   );
 }
