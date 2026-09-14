@@ -84,7 +84,7 @@ function Layout() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <BrandHeader>
-        <nav className="flex flex-wrap items-center justify-end gap-3 sm:gap-6">
+        <nav className="flex w-full flex-col items-stretch gap-0 sm:w-max sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-6">
           {[
             ["/print-estimator", "Print estimator"],
             ["/cost-estimator", "Cost estimator"],
@@ -93,7 +93,7 @@ function Layout() {
             ["/profiles", "Profiles"],
             ["/market-benchmark", "Market benchmark"],
           ].map(([to, label]) => (
-            <Button key={to} className="h-auto rounded-none px-0 py-0 text-sm" variant="ghost" asChild>
+            <Button key={to} className="h-auto justify-start rounded-none px-3 py-2 text-left text-sm sm:px-0 sm:py-0" variant="ghost" asChild>
               <NavLink
                 to={to}
                 className={({ isActive }) =>
@@ -104,7 +104,7 @@ function Layout() {
               </NavLink>
             </Button>
           ))}
-          <Button className="h-auto rounded-none px-0 py-0 text-sm" variant="ghost" asChild>
+          <Button className="h-auto justify-start rounded-none px-3 py-2 text-left text-sm sm:px-0 sm:py-0" variant="ghost" asChild>
             <a href="/pdf" className="text-muted-foreground">
               PDF tools
             </a>
