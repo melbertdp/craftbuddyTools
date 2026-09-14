@@ -1,4 +1,5 @@
 import { ArrowDown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { ShineBorder } from "../ui/shine-border";
 
@@ -31,12 +32,12 @@ function QuickDropCard() {
             <p className="mt-2 text-xs text-[#526057] sm:text-[13px]">Get files. Faster.</p>
           </div>
         </div>
-        <a
-          href="/quickdrop"
+        <Link
+          to="/quickdrop"
           className="mt-4 inline-flex border-t border-[#d9e3d5] pt-3 text-xs font-bold text-[#5d7052] outline-none transition-colors hover:text-[#2f463a] focus-visible:ring-2 focus-visible:ring-[#6f8368]/50"
         >
           Learn more
-        </a>
+        </Link>
       </div>
     </div>
   );

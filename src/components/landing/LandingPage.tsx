@@ -106,7 +106,6 @@ const TOOLS: Tool[] = [
       "Edit, sign, merge, split, convert, watermark, and compress PDFs. Every document stays on your device.",
     cta: "Open PDF tools",
     href: "/pdf",
-    external: true,
     theme: {
       background: "bg-[#dce7de]",
       border: "border-[rgba(56,82,60,0.18)] hover:border-[rgba(56,82,60,0.36)]",

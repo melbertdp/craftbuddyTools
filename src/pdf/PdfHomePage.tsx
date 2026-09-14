@@ -1,30 +1,27 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { BrandHeader } from "@/components/BrandHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ToolCard } from "@/pdf/components/common/ToolCard";
 import { PDF_TOOL_CATEGORIES } from "@/pdf/tools";
+import { SITE_NAV_ITEMS } from "@/components/siteNav";
 
 export function PdfHomePage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <BrandHeader>
         <nav className="flex w-full flex-col items-stretch gap-0 sm:w-max sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-6">
-          {[
-            ["/print-estimator-v2", "Print Calculator"],
-            ["/cost-estimator", "Cost estimator"],
-            ["/qr-generator", "QR generator"],
-            ["/id-photo-print", "ID photo print"],
-            ["/profiles", "Profiles"],
-            ["/market-benchmark", "Market benchmark"],
-            ["/pdf", "PDF tools"],
-          ].map(([href, label]) => (
-            <Link
+          {SITE_NAV_ITEMS.map(([href, label]) => (
+            <NavLink
               key={href}
               to={href}
-              className="px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground sm:px-0 sm:py-0"
+              className={({ isActive }) =>
+                `px-3 py-2 text-left text-sm transition-colors hover:text-foreground sm:px-0 sm:py-0 ${
+                  isActive ? "text-foreground" : "text-muted-foreground"
+                }`
+              }
             >
               {label}
-            </Link>
+            </NavLink>
           ))}
         </nav>
       </BrandHeader>

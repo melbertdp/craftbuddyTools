@@ -40,6 +40,11 @@ import { parseRanges, toRanges } from "@/pdf/core/ranges";
 import type { LoadedDocument } from "@/pdf/core/document-engine";
 import { runJob } from "@/pdf/stores/job-store";
 import { useWorkspaceStore } from "@/pdf/stores/workspace-store";
+import {
+  releaseRemovedDocuments,
+  useReleaseDocumentsOnUnmount,
+  useResetPdfWorkspaceOnMount,
+} from "@/pdf/components/common/usePdfToolReset";
 import type { PdfPageModel, PdfSourceDocument } from "@/pdf/types";
 
 export type PageWorkspaceVariant =
@@ -84,12 +89,19 @@ export function PageWorkspaceTool({ variant, title, description }: PageWorkspace
   const [splitInput, setSplitInput] = React.useState("1-1");
   const [splitEveryPage, setSplitEveryPage] = React.useState(false);
 
+  // Each tool instance starts empty; never show the previous tool's upload.
+  useResetPdfWorkspaceOnMount();
+  useReleaseDocumentsOnUnmount(documents);
+
   const multiple = variant === "merge";
   const scope: LimitScope = "general";
 
   const rebuild = React.useCallback(
     (docs: LoadedDocument[]) => {
-      setDocuments(docs);
+      setDocuments((previous) => {
+        releaseRemovedDocuments(previous, docs);
+        return docs;
+      });
       setError(undefined);
       setNotice(undefined);
       store.getState().reset();

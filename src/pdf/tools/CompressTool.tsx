@@ -21,6 +21,11 @@ import { downloadBytes } from "@/pdf/core/download";
 import { exportFileName } from "@/pdf/core/filenames";
 import type { LoadedDocument } from "@/pdf/core/document-engine";
 import { runJob } from "@/pdf/stores/job-store";
+import {
+  releaseRemovedDocuments,
+  useReleaseDocumentsOnUnmount,
+  useResetPdfWorkspaceOnMount,
+} from "@/pdf/components/common/usePdfToolReset";
 import { cn } from "@/lib/utils";
 
 const LEVELS: { value: CompressionLevel; label: string; description: string }[] = [
@@ -40,6 +45,15 @@ export function CompressTool() {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string>();
   const [notice, setNotice] = React.useState<string>();
+
+  // Each tool instance starts empty; never show the previous tool's upload.
+  useResetPdfWorkspaceOnMount();
+  useReleaseDocumentsOnUnmount(documents);
+
+  const handleDocumentsChange = (next: LoadedDocument[]) => {
+    releaseRemovedDocuments(documents, next);
+    setDocuments(next);
+  };
 
   const document = documents[0];
 
@@ -82,7 +96,7 @@ export function CompressTool() {
   return (
     <ToolShell title="Compress PDF" description="Reduce file size with honest before/after results.">
       <div className="mx-auto max-w-2xl space-y-4">
-        <PdfUploader scope="general" value={documents} onChange={setDocuments} />
+        <PdfUploader scope="general" value={documents} onChange={handleDocumentsChange} />
 
         {document && (
           <div className="space-y-4 rounded-xl border border-border bg-card p-4">

@@ -38,6 +38,11 @@ import { PDF_LIMITS } from "@/pdf/config/limits";
 import type { LoadedDocument } from "@/pdf/core/document-engine";
 import { runJob } from "@/pdf/stores/job-store";
 import { useWorkspaceStore } from "@/pdf/stores/workspace-store";
+import {
+  releaseRemovedDocuments,
+  useReleaseDocumentsOnUnmount,
+  useResetPdfWorkspaceOnMount,
+} from "@/pdf/components/common/usePdfToolReset";
 import type { ImageObject } from "@/pdf/types";
 
 interface EditorWorkspaceProps {
@@ -65,12 +70,19 @@ export function EditorWorkspace({ mode, title, description }: EditorWorkspacePro
   const [thumbnailsOpen, setThumbnailsOpen] = React.useState(false);
   const imageInputRef = React.useRef<HTMLInputElement>(null);
 
+  // Each tool instance starts empty; never show the previous tool's upload.
+  useResetPdfWorkspaceOnMount();
+  useReleaseDocumentsOnUnmount(documents);
+
   const activePage = pages.find((page) => page.id === activePageId) ?? pages[0];
   const activeIndex = activePage ? pages.indexOf(activePage) : 0;
   const activeSource = activePage ? resolveSource(activePage, sources) : undefined;
 
   const loadDocuments = (docs: LoadedDocument[]) => {
-    setDocuments(docs);
+    setDocuments((previous) => {
+      releaseRemovedDocuments(previous, docs);
+      return docs;
+    });
     setError(undefined);
     setNotice(undefined);
     store.getState().reset();

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 
 const OTHER_TOOLS = [
   { href: "/print-estimator-v2", label: "Print Calculator" },
@@ -18,7 +18,7 @@ export function ToolsNav({ className }: { className?: string }) {
       {OTHER_TOOLS.map((tool) => (
         <Link
           key={tool.href}
-          href={tool.href}
+          to={tool.href}
           className="rounded-sm text-[13px] font-medium tracking-[0.04em] text-[#526057] transition-colors hover:text-[#20372b] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6f8368]/60"
         >
           {tool.label}

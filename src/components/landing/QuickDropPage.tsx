@@ -1,4 +1,5 @@
 import { ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
 
@@ -45,13 +46,13 @@ export function QuickDropPage() {
               </ul>
             </div>
           </div>
-          <a
-            href="/"
+          <Link
+            to="/"
             className="mt-10 inline-flex items-center gap-2 rounded-xl bg-[#2f463a] px-6 py-3.5 text-sm font-semibold text-[#f5f8f1] transition-colors hover:bg-[#20372b] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6f8368]/60 focus-visible:ring-offset-2"
           >
             <ArrowLeft className="size-4" aria-hidden />
             Back to tools
-          </a>
+          </Link>
         </section>
       </main>
       <SiteFooter />

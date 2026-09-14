@@ -28,6 +28,11 @@ import { parsePageList } from "@/pdf/core/ranges";
 import type { LoadedDocument } from "@/pdf/core/document-engine";
 import type { ImageFormat } from "@/pdf/core/image";
 import { runJob } from "@/pdf/stores/job-store";
+import {
+  releaseRemovedDocuments,
+  useReleaseDocumentsOnUnmount,
+  useResetPdfWorkspaceOnMount,
+} from "@/pdf/components/common/usePdfToolReset";
 
 const POSITION_LABELS: Record<StampPosition, string> = {
   "top-left": "Top left",
@@ -61,6 +66,15 @@ export function WatermarkTool() {
   const [error, setError] = React.useState<string>();
   const [notice, setNotice] = React.useState<string>();
   const fileRef = React.useRef<HTMLInputElement>(null);
+
+  // Each tool instance starts empty; never show the previous tool's upload.
+  useResetPdfWorkspaceOnMount();
+  useReleaseDocumentsOnUnmount(documents);
+
+  const handleDocumentsChange = (next: LoadedDocument[]) => {
+    releaseRemovedDocuments(documents, next);
+    setDocuments(next);
+  };
 
   const document = documents[0];
 
@@ -160,7 +174,7 @@ export function WatermarkTool() {
     <ToolShell title="Watermark PDF" description="Add a text or image watermark with live preview.">
       <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-4">
-          <PdfUploader scope="general" value={documents} onChange={setDocuments} />
+          <PdfUploader scope="general" value={documents} onChange={handleDocumentsChange} />
 
           {document && (
             <div className="space-y-4 rounded-xl border border-border bg-card p-4">

@@ -16,6 +16,11 @@ import { exportFileName } from "@/pdf/core/filenames";
 import type { LoadedDocument } from "@/pdf/core/document-engine";
 import type { PdfMetadata } from "@/pdf/types";
 import { runJob } from "@/pdf/stores/job-store";
+import {
+  releaseRemovedDocuments,
+  useReleaseDocumentsOnUnmount,
+  useResetPdfWorkspaceOnMount,
+} from "@/pdf/components/common/usePdfToolReset";
 
 const EMPTY: Record<keyof PdfMetadata, string> = {
   title: "",
@@ -33,9 +38,14 @@ export function MetadataTool() {
   const [error, setError] = React.useState<string>();
   const [notice, setNotice] = React.useState<string>();
 
+  // Each tool instance starts empty; never show the previous tool's upload.
+  useResetPdfWorkspaceOnMount();
+  useReleaseDocumentsOnUnmount(documents);
+
   const document = documents[0];
 
   const load = (docs: LoadedDocument[]) => {
+    releaseRemovedDocuments(documents, docs);
     setDocuments(docs);
     setError(undefined);
     setNotice(undefined);

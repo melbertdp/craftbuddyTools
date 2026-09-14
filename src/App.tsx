@@ -30,7 +30,10 @@ import { QuickDropPage } from "./components/landing/QuickDropPage";
 import { BrandHeader } from "./components/BrandHeader";
 import { SiteFooter } from "./components/SiteFooter";
 import { PdfHomePage } from "./pdf/PdfHomePage";
+import { PdfProviders } from "./pdf/components/common/PdfProviders";
 import { getToolComponent } from "./pdf/tools/registry";
+import { resetPdfWorkspace } from "./pdf/components/common/usePdfToolReset";
+import { SITE_NAV_ITEMS } from "./components/siteNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -88,14 +91,7 @@ function Layout() {
     <div className="min-h-screen bg-background text-foreground">
       <BrandHeader>
         <nav className="flex w-full flex-col items-stretch gap-0 sm:w-max sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-6">
-          {[
-            ["/print-estimator-v2", "Print Calculator"],
-            ["/cost-estimator", "Cost estimator"],
-            ["/qr-generator", "QR generator"],
-            ["/id-photo-print", "ID photo print"],
-            // ["/profiles", "Profiles"],
-            ["/market-benchmark", "Market benchmark"],
-          ].map(([to, label]) => (
+          {SITE_NAV_ITEMS.map(([to, label]) => (
             <Button key={to} className="h-auto justify-start rounded-none px-3 py-2 text-left text-sm sm:px-0 sm:py-0" variant="ghost" asChild>
               <NavLink
                 to={to}
@@ -107,11 +103,6 @@ function Layout() {
               </NavLink>
             </Button>
           ))}
-          <Button className="h-auto justify-start rounded-none px-3 py-2 text-left text-sm sm:px-0 sm:py-0" variant="ghost" asChild>
-            <a href="/pdf" className="text-muted-foreground">
-              PDF tools
-            </a>
-          </Button>
         </nav>
       </BrandHeader>
       <Outlet />
@@ -133,7 +124,13 @@ function ScrollToTop() {
 function PdfToolRoute() {
   const { tool = "" } = useParams();
   const Component = getToolComponent(tool);
-  return Component ? <Component /> : <Navigate to="/pdf" replace />;
+  // Force a full remount per tool so local upload state never carries over,
+  // and clear the shared workspace store which would otherwise persist.
+  useEffect(() => {
+    resetPdfWorkspace();
+  }, [tool]);
+  if (!Component) return <Navigate to="/pdf" replace />;
+  return <Component key={tool} />;
 }
 
 function Field({
@@ -885,8 +882,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/quickdrop" element={<QuickDropPage />} />
-        <Route path="/pdf" element={<PdfHomePage />} />
-        <Route path="/pdf/:tool" element={<PdfToolRoute />} />
+        <Route element={<PdfProviders />}>
+          <Route path="/pdf" element={<PdfHomePage />} />
+          <Route path="/pdf/:tool" element={<PdfToolRoute />} />
+        </Route>
         <Route element={<Layout />}>
           <Route path="/print-estimator-v2" element={<PrintEstimatorV2 />} />
           <Route path="/cost-estimator" element={<PricingCalculator />} />
