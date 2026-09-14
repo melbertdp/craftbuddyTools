@@ -68,7 +68,7 @@ function HeroDecor() {
 export function Hero() {
   return (
     <section className="relative">
-      <div className="mx-auto w-full max-w-[1320px] px-6 pb-14 pt-16 sm:px-10 sm:pb-16 sm:pt-20 lg:px-16 lg:pb-24 lg:pt-24">
+      <div className="mx-auto w-full max-w-[1320px] px-6 pb-14 pt-8 sm:px-10 sm:pb-16 sm:pt-10 lg:px-16 lg:pb-24 lg:pt-12">
         <div className="relative">
           <div className="relative z-10">
             <p className="craft-fade-up text-[11px] font-semibold uppercase tracking-[0.28em] text-[#6f8368]">
