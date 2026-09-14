@@ -1020,7 +1020,7 @@ export default function PhotoIdPrintPage() {
       setShirtTransform(fit);
       setAutoFitStatus(
         fit.approximate
-          ? "Approximate fit from the head — fine-tune as needed."
+          ? "Approximate fit from the head - fine-tune as needed."
           : "Auto fit applied. Fine-tune as needed.",
       );
     } catch (error) {
@@ -1170,6 +1170,7 @@ export default function PhotoIdPrintPage() {
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, sheet.width, sheet.height);
     cells.forEach((cell) => {
+      if (cutMarks) drawTrimMarks(context, cell, scale);
       drawCover(
         context,
         finalCanvas,
@@ -1178,15 +1179,6 @@ export default function PhotoIdPrintPage() {
         cell.widthMm * scale,
         cell.heightMm * scale,
       );
-      context.strokeStyle = "#000";
-      context.lineWidth = 2;
-      context.strokeRect(
-        cell.xMm * scale,
-        cell.yMm * scale,
-        cell.widthMm * scale,
-        cell.heightMm * scale,
-      );
-      if (cutMarks) drawTrimMarks(context, cell, scale);
     });
     const link = document.createElement("a");
     link.download = `${mixSizes ? "mixed" : photoSize.id}_${totalPhotos}x.png`;
@@ -1202,16 +1194,6 @@ export default function PhotoIdPrintPage() {
       format: [paper.widthMm, paper.heightMm],
       orientation: paper.widthMm > paper.heightMm ? "landscape" : "portrait",
     });
-    cells.forEach((cell) =>
-      pdf.addImage(
-        finalCanvas.toDataURL("image/png"),
-        "PNG",
-        cell.xMm,
-        cell.yMm,
-        cell.widthMm,
-        cell.heightMm,
-      ),
-    );
     if (cutMarks) {
       pdf.setDrawColor(0);
       pdf.setLineWidth(0.2);
@@ -1231,6 +1213,16 @@ export default function PhotoIdPrintPage() {
         pdf.line(x + w, y + h, x + w, y + h + mark);
       });
     }
+    cells.forEach((cell) =>
+      pdf.addImage(
+        finalCanvas.toDataURL("image/png"),
+        "PNG",
+        cell.xMm,
+        cell.yMm,
+        cell.widthMm,
+        cell.heightMm,
+      ),
+    );
     pdf.save(`${mixSizes ? "mixed" : photoSize.id}_${totalPhotos}x.pdf`);
   }
 
@@ -1244,6 +1236,7 @@ export default function PhotoIdPrintPage() {
     context.fillStyle = "#fff";
     context.fillRect(0, 0, data.width, data.height);
     const scale = DPI / 25.4;
+    if (cutMarks) cells.forEach((cell) => drawTrimMarks(context, cell, scale));
     cells.forEach((cell) => {
       drawCover(
         context,
@@ -1253,14 +1246,6 @@ export default function PhotoIdPrintPage() {
         cell.widthMm * scale,
         cell.heightMm * scale,
       );
-      context.strokeStyle = "#000";
-      context.strokeRect(
-        cell.xMm * scale,
-        cell.yMm * scale,
-        cell.widthMm * scale,
-        cell.heightMm * scale,
-      );
-      if (cutMarks) drawTrimMarks(context, cell, scale);
     });
     const popup = window.open("", "_blank", "width=900,height=1000");
     if (!popup) return;
@@ -1527,7 +1512,7 @@ export default function PhotoIdPrintPage() {
               {cells.map((cell) => (
                 <React.Fragment key={cell.id}>
                   <div
-                    className="absolute overflow-hidden border border-black"
+                    className="absolute z-10 overflow-hidden"
                     style={{
                       left: `${cell.xMm}mm`,
                       top: `${cell.yMm}mm`,
@@ -1549,7 +1534,7 @@ export default function PhotoIdPrintPage() {
                   </div>
                   {cutMarks && (
                     <div
-                      className="pointer-events-none absolute"
+                      className="pointer-events-none absolute z-0"
                       style={{
                         left: `${cell.xMm}mm`,
                         top: `${cell.yMm}mm`,

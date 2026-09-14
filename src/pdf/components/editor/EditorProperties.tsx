@@ -107,7 +107,7 @@ export function EditorProperties({ mode }: { mode: "edit" | "sign" }) {
     return (
       <div className="space-y-4 p-4">
         <p className="text-xs text-muted-foreground">
-          Select an object to edit its properties. Nothing selected — these are the defaults for new objects.
+          Select an object to edit its properties. Nothing selected - these are the defaults for new objects.
         </p>
         <DefaultSettings mode={mode} />
       </div>

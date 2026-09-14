@@ -12,7 +12,7 @@ export interface WarningInput {
 }
 
 export const LARGE_DOCUMENT_MESSAGE =
-  "Large document — This PDF may require additional processing time and memory on your device.";
+  "Large document - This PDF may require additional processing time and memory on your device.";
 
 export function collectWarnings(input: WarningInput): DocumentWarning[] {
   const warnings: DocumentWarning[] = [];

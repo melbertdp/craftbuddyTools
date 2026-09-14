@@ -29,7 +29,7 @@ export default function PdfHomePage() {
             <span className="text-primary">on your device.</span>
           </h1>
           <p className="mt-5 text-base leading-relaxed text-muted-foreground">
-            Your documents stay on your device. PDF processing happens directly in your browser —
+            Your documents stay on your device. PDF processing happens directly in your browser -
             no uploads, no accounts, no queues.
           </p>
         </div>

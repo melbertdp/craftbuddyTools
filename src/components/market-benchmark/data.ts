@@ -41,14 +41,14 @@ export const BENCHMARK_CATEGORIES = [
 
 export const BENCHMARKS: BenchmarkRecord[] = [
   ...rows("Document Printing", [
-    ["B&W — Text Only", "Short", 3, 5, "per page"], ["B&W — Text Only", "A4", 4, 6, "per page"], ["B&W — Text Only", "Long", 6, 7, "per page"],
-    ["B&W — Text + Image", "Short", 6, 7, "per page"], ["B&W — Text + Image", "A4", 7, 8, "per page"], ["B&W — Text + Image", "Long", 8, 10, "per page"],
-    ["B&W — Picture Only", "Short", 5, 6, "per page"], ["B&W — Picture Only", "A4", 6, 10, "per page"], ["B&W — Picture Only", "Long", 7, 10, "per page"],
-    ["B&W — Full Image", "Short", 8, 10, "per page"], ["B&W — Full Image", "A4", 10, 12, "per page"], ["B&W — Full Image", "Long", 12, 15, "per page"],
-    ["Colored — Text Only", "Short", 6, 8, "per page"], ["Colored — Text Only", "A4", 7, 10, "per page"], ["Colored — Text Only", "Long", 8, 12, "per page"],
-    ["Colored — Text + Image", "Short", 9, 10, "per page"], ["Colored — Text + Image", "A4", 10, 12, "per page"], ["Colored — Text + Image", "Long", 11, 15, "per page"],
-    ["Colored — Picture Only", "Short", 8, 10, "per page"], ["Colored — Picture Only", "A4", 9, 12, "per page"], ["Colored — Picture Only", "Long", 10, 15, "per page"],
-    ["Colored — Full Image", "Short", 12, 15, "per page"], ["Colored — Full Image", "A4", 13, 18, "per page"], ["Colored — Full Image", "Long", 15, 20, "per page"],
+    ["B&W - Text Only", "Short", 3, 5, "per page"], ["B&W - Text Only", "A4", 4, 6, "per page"], ["B&W - Text Only", "Long", 6, 7, "per page"],
+    ["B&W - Text + Image", "Short", 6, 7, "per page"], ["B&W - Text + Image", "A4", 7, 8, "per page"], ["B&W - Text + Image", "Long", 8, 10, "per page"],
+    ["B&W - Picture Only", "Short", 5, 6, "per page"], ["B&W - Picture Only", "A4", 6, 10, "per page"], ["B&W - Picture Only", "Long", 7, 10, "per page"],
+    ["B&W - Full Image", "Short", 8, 10, "per page"], ["B&W - Full Image", "A4", 10, 12, "per page"], ["B&W - Full Image", "Long", 12, 15, "per page"],
+    ["Colored - Text Only", "Short", 6, 8, "per page"], ["Colored - Text Only", "A4", 7, 10, "per page"], ["Colored - Text Only", "Long", 8, 12, "per page"],
+    ["Colored - Text + Image", "Short", 9, 10, "per page"], ["Colored - Text + Image", "A4", 10, 12, "per page"], ["Colored - Text + Image", "Long", 11, 15, "per page"],
+    ["Colored - Picture Only", "Short", 8, 10, "per page"], ["Colored - Picture Only", "A4", 9, 12, "per page"], ["Colored - Picture Only", "Long", 10, 15, "per page"],
+    ["Colored - Full Image", "Short", 12, 15, "per page"], ["Colored - Full Image", "A4", 13, 18, "per page"], ["Colored - Full Image", "Long", 15, 20, "per page"],
   ]),
   ...rows("Photocopy / Xerox", [
     ["B&W Photocopy", "Short", 2, 4, "per page"], ["B&W Photocopy", "A4", 2, 5, "per page"], ["B&W Photocopy", "Long", 4, 7, "per page"],
@@ -66,16 +66,16 @@ export const BENCHMARKS: BenchmarkRecord[] = [
     ["A4 Photo", "Approx. 8.27 × 11.69 in", 40, 80, "per piece", "Bundle pricing and minimum quantities are common for smaller photo sizes."],
   ]),
   ...rows("Rush ID", [
-    ["Basic Rush ID Package", "—", 35, 40, "per package", "Typically smaller 1×1 / 2×2 combinations."], ["Standard Rush ID Package", "—", 40, 50, "per package", "Typical mixed ID-size package."], ["Large Rush ID Package", "—", 50, 65, "per package", "Larger quantity or mixed-size package."], ["Soft Copy Add-on", "—", 10, 10, "per package", "Digital copy."], ["Formal Attire Editing", "—", 20, 20, "per package", "Optional photo editing service."],
+    ["Basic Rush ID Package", "-", 35, 40, "per package", "Typically smaller 1×1 / 2×2 combinations."], ["Standard Rush ID Package", "-", 40, 50, "per package", "Typical mixed ID-size package."], ["Large Rush ID Package", "-", 50, 65, "per package", "Larger quantity or mixed-size package."], ["Soft Copy Add-on", "-", 10, 10, "per package", "Digital copy."], ["Formal Attire Editing", "-", 20, 20, "per package", "Optional photo editing service."],
   ]),
   ...rows("Lamination", [
-    ["ID / Wallet — 125 Micron", "—", 15, 25, "per piece"], ["ID / Wallet — 250 Micron", "—", 20, 25, "per piece"], ["3R — 250 Micron", "—", 20, 20, "per piece"], ["4R — 250 Micron", "—", 25, 25, "per piece"], ["A6 — 125 Micron", "—", 25, 25, "per piece"], ["5R — 250 Micron", "—", 35, 35, "per piece"], ["A5 / Half A4 — 125 Micron", "—", 30, 40, "per piece"], ["A5 / Half A4 — 250 Micron", "—", 35, 45, "per piece"], ["6R — 250 Micron", "—", 40, 40, "per piece"], ["8R — 250 Micron", "—", 50, 50, "per piece"], ["A4 — 125 Micron", "—", 40, 50, "per piece"], ["A4 — 250 Micron", "—", 60, 70, "per piece"],
+    ["ID / Wallet - 125 Micron", "-", 15, 25, "per piece"], ["ID / Wallet - 250 Micron", "-", 20, 25, "per piece"], ["3R - 250 Micron", "-", 20, 20, "per piece"], ["4R - 250 Micron", "-", 25, 25, "per piece"], ["A6 - 125 Micron", "-", 25, 25, "per piece"], ["5R - 250 Micron", "-", 35, 35, "per piece"], ["A5 / Half A4 - 125 Micron", "-", 30, 40, "per piece"], ["A5 / Half A4 - 250 Micron", "-", 35, 45, "per piece"], ["6R - 250 Micron", "-", 40, 40, "per piece"], ["8R - 250 Micron", "-", 50, 50, "per piece"], ["A4 - 125 Micron", "-", 40, 50, "per piece"], ["A4 - 250 Micron", "-", 60, 70, "per piece"],
   ]),
   ...rows("Scanning", [
-    ["Document Scan to Soft Copy", "Any common document size", 5, 15, "per page"], ["Scan + B&W Print", "—", 5, 5, "per page"], ["Scan + Color Print", "—", 10, 15, "per page", "Some low-cost providers may offer basic scanning below this benchmark."],
+    ["Document Scan to Soft Copy", "Any common document size", 5, 15, "per page"], ["Scan + B&W Print", "-", 5, 5, "per page"], ["Scan + Color Print", "-", 10, 15, "per page", "Some low-cost providers may offer basic scanning below this benchmark."],
   ]),
   ...rows("Sticker / Vinyl", [
-    ["Matte Sticker", "A4", 30, 40, "per page"], ["Glossy Sticker", "A4", 30, 50, "per page"], ["Photo Waterproof Sticker", "A4", 65, 80, "per page"], ["Waterproof Vinyl", "A4", 65, 65, "per page"], ["Vinyl Lettering", "Custom", 5, 5, "per sq. inch"], ["Custom Layout Add-on", "—", 10, 10, "per job"], ["Photo Editing Add-on", "—", 20, 20, "per job"],
+    ["Matte Sticker", "A4", 30, 40, "per page"], ["Glossy Sticker", "A4", 30, 50, "per page"], ["Photo Waterproof Sticker", "A4", 65, 80, "per page"], ["Waterproof Vinyl", "A4", 65, 65, "per page"], ["Vinyl Lettering", "Custom", 5, 5, "per sq. inch"], ["Custom Layout Add-on", "-", 10, 10, "per job"], ["Photo Editing Add-on", "-", 20, 20, "per job"],
   ]),
   ...rows("Photo Cards", [
     ["Large Photo Card", "11.94 × 17.02 cm", 70, 70, "per package", "Example package contains 2 pieces."], ["Standard Photo Card", "5.49 × 8.38 cm", 80, 80, "per package", "Example package contains 10 pieces."], ["Small Photo Card", "5.08 × 7.11 cm", 80, 80, "per package", "Example package contains 12 pieces."],

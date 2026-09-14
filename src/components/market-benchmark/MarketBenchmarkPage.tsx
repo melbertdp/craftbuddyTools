@@ -44,7 +44,7 @@ export function MarketBenchmarkPage() {
         <header>
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#5d7052]">Reference library / Philippines</p>
           <h1 className="mt-2 text-[32px] font-extrabold leading-[1.05] tracking-[-0.045em] md:text-[42px]">Market Price Benchmark</h1>
-          <p className="mt-3 max-w-[840px] text-[15px] leading-relaxed text-[#66736A]">Reference price ranges for common printing and related services. Use these prices as a market benchmark only — actual prices may vary depending on location, materials, print quality, quantity, and service provider.</p>
+          <p className="mt-3 max-w-[840px] text-[15px] leading-relaxed text-[#66736A]">Reference price ranges for common printing and related services. Use these prices as a market benchmark only - actual prices may vary depending on location, materials, print quality, quantity, and service provider.</p>
         </header>
 
         <div className="mt-5 flex items-start gap-2.5 border border-[#cbd8c3] bg-[#eef4ea] px-4 py-3 text-xs text-[#52684e]" role="note">

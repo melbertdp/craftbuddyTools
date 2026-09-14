@@ -282,7 +282,7 @@ function ComboInput({
           <p className="px-2 py-1.5 text-[12px] text-muted-foreground">
             {options.length === 0
               ? "No materials yet. Use “Input materials”."
-              : "No match — keep typing to use a custom value."}
+              : "No match - keep typing to use a custom value."}
           </p>
         ) : (
           filtered.map((option) => (

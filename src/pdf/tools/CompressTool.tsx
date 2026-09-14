@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 const LEVELS: { value: CompressionLevel; label: string; description: string }[] = [
   { value: "low", label: "Low compression", description: "Structural optimization only. Safest for quality." },
   { value: "recommended", label: "Recommended", description: "Balanced size and quality." },
-  { value: "high", label: "High compression", description: "Smallest size — images are downsampled." },
+  { value: "high", label: "High compression", description: "Smallest size - images are downsampled." },
 ];
 
 export function CompressTool() {

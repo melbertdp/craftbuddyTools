@@ -346,7 +346,7 @@ function PrintEstimator() {
       <div className="mb-[26px] flex items-start gap-3 border border-[#e8d9a8] bg-[#fdf8e7] px-4 py-3 max-[760px]:mb-5">
         <span className="mt-px rounded-sm bg-[#b8860b] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">Beta</span>
         <p className="text-[13px] leading-[1.5] text-[#7a5c00]">
-          This estimator is still in beta and actively being refined. Pricing results are a guide only — double-check your figures before quoting.
+          This estimator is still in beta and actively being refined. Pricing results are a guide only - double-check your figures before quoting.
         </p>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_350px] items-start gap-[22px] max-[760px]:grid-cols-1">

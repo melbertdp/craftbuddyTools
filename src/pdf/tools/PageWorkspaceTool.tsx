@@ -283,7 +283,7 @@ export function PageWorkspaceTool({ variant, title, description }: PageWorkspace
           compact={documents.length > 0 || pages.length > 0}
           hint={
             multiple
-              ? `Add PDFs — up to ${PDF_LIMITS.merge.maxDocuments} files, ${formatBytes(
+              ? `Add PDFs - up to ${PDF_LIMITS.merge.maxDocuments} files, ${formatBytes(
                   PDF_LIMITS.merge.maxCombinedBytes,
                 )} total`
               : undefined
@@ -452,7 +452,7 @@ export function PageWorkspaceTool({ variant, title, description }: PageWorkspace
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Page {previewNumber} preview</DialogTitle>
-            <DialogDescription>Preview only — nothing is uploaded.</DialogDescription>
+            <DialogDescription>Preview only - nothing is uploaded.</DialogDescription>
           </DialogHeader>
           <div className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-muted/40 p-4">
             {previewPage && previewSource && (
