@@ -126,6 +126,46 @@
   }
 }
 
+@keyframes gradient {
+  to {
+    background-position: var(--bg-size) 0;
+  }
+}
+
+.animate-gradient {
+  animation: gradient 8s linear infinite;
+}
+
+@keyframes shine {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
+}
+
+.animate-shine {
+  animation: shine var(--duration) linear infinite;
+}
+
+@keyframes quick-drop-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(2deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+  }
+}
+
+.animate-quick-drop {
+  animation: quick-drop-float 5s ease-in-out infinite;
+}
+
 .craft-landing {
   background-color: #f7f8f2;
   color: #20372b;
@@ -159,7 +199,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .craft-fade-up {
+  .craft-fade-up,
+  .animate-quick-drop,
+  .animate-shine {
     animation: none;
   }
 }

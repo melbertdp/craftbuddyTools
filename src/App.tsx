@@ -25,6 +25,7 @@ import { MarketBenchmarkPage } from "./components/market-benchmark/MarketBenchma
 import QRDesigner from "./qr/QRDesigner";
 import PhotoIdPrintPage from "./photo-print/PhotoIdPrintPage";
 import { LandingPage } from "./components/landing/LandingPage";
+import { QuickDropPage } from "./components/landing/QuickDropPage";
 import { BrandHeader } from "./components/BrandHeader";
 import { SiteFooter } from "./components/SiteFooter";
 import { Button } from "@/components/ui/button";
@@ -863,6 +864,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/quickdrop" element={<QuickDropPage />} />
         <Route element={<Layout />}>
           <Route path="/print-estimator" element={<PrintEstimator />} />
           <Route path="/cost-estimator" element={<PricingCalculator />} />

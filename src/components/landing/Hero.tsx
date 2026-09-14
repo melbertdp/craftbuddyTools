@@ -1,5 +1,47 @@
 import { ArrowDown } from "lucide-react";
 
+import { ShineBorder } from "../ui/shine-border";
+
+function QuickDropCard() {
+  return (
+    <div className="relative mt-14 w-full max-w-[390px] animate-quick-drop lg:absolute lg:right-[7%] lg:top-[250px] lg:mt-0 xl:right-[9%] xl:top-[300px]">
+      <div className="relative rotate-[2deg] rounded-[22px] border border-white/80 bg-[#f8faf4]/95 px-5 py-5 shadow-[0_24px_42px_rgba(47,70,58,0.16)] backdrop-blur-sm sm:px-7 sm:py-6">
+        <ShineBorder
+          aria-hidden="true"
+          borderWidth={2}
+          duration={8}
+          shineColor="#8fa98a"
+        />
+        <span className="absolute -right-2 -top-4 rounded-full bg-[#718969] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#f7faf4] shadow-[0_5px_12px_rgba(47,70,58,0.16)]">
+          New
+        </span>
+        <div className="flex items-center gap-4 sm:gap-5">
+          <img
+            src="/quickdrop.png"
+            alt=""
+            className="size-[76px] shrink-0 rounded-[19px] object-cover sm:size-[88px]"
+          />
+          <div>
+            <p className="font-heading text-[27px] font-extrabold leading-none tracking-[-0.06em] text-[#20372b] sm:text-[31px]">
+              Quick<span className="text-[#668060]">Drop</span>
+            </p>
+            <p className="mt-2 text-[17px] font-bold leading-none text-[#6f8368] sm:text-[19px]">
+              Coming Soon
+            </p>
+            <p className="mt-2 text-xs text-[#526057] sm:text-[13px]">Get files. Faster.</p>
+          </div>
+        </div>
+        <a
+          href="/quickdrop"
+          className="mt-4 inline-flex border-t border-[#d9e3d5] pt-3 text-xs font-bold text-[#5d7052] outline-none transition-colors hover:text-[#2f463a] focus-visible:ring-2 focus-visible:ring-[#6f8368]/50"
+        >
+          Learn more
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function HeroDecor() {
   return (
     <div
@@ -54,6 +96,7 @@ export function Hero() {
             </div>
           </div>
           <HeroDecor />
+          <QuickDropCard />
         </div>
       </div>
     </section>
