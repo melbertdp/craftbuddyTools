@@ -1,12 +1,12 @@
 const isDev = process.env.NODE_ENV !== "production";
 
 const scriptSrc = isDev
-  ? "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app"
-  : "'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app";
+  ? "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app https://va.vercel-scripts.com"
+  : "'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app https://va.vercel-scripts.com";
 
 const connectSrc = isDev
-  ? "'self' data: ws: wss: http://localhost:* http://127.0.0.1:* https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app"
-  : "'self' data: https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app";
+  ? "'self' data: ws: wss: http://localhost:* http://127.0.0.1:* https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app https://vitals.vercel-insights.com"
+  : "'self' data: https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://cdn.jsdelivr.net https://*.jsdelivr.net https://toolassets.craftbuddy.app https://vitals.vercel-insights.com";
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -19,7 +19,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob:",
-  "media-src 'self' blob:",
+  "media-src 'self' blob: https://toolassets.craftbuddy.app",
   "worker-src 'self' blob: https://cdn.jsdelivr.net https://*.jsdelivr.net",
   `connect-src ${connectSrc}`,
   "upgrade-insecure-requests",

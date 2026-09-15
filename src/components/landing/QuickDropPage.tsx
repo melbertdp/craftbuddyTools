@@ -11,6 +11,16 @@ import {
 import { QuickDropShowcase } from "./QuickDropShowcase";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+
+const DEMO_VIDEO_URL = "https://toolassets.craftbuddy.app/tools/video/0915.mp4";
 
 const HERO_POINTS = [
   "Works on your local network",
@@ -83,13 +93,39 @@ export function QuickDropPage() {
                     Try QuickDrop
                     <ArrowRight className="size-4" aria-hidden />
                   </a>
-                  {/* <a
-                    href="#features"
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#4f46e5]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f8f2]"
-                  >
-                    <Play className="size-3.5 fill-current" aria-hidden />
-                    See demo
-                  </a> */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#4f46e5]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f8f2]"
+                      >
+                        <Play className="size-3.5 fill-current" aria-hidden />
+                        See demo
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="overflow-hidden border-[#dce4d8] bg-[#f7f8f2] p-4 sm:max-w-4xl sm:p-6">
+                      <DialogHeader>
+                        <DialogTitle className="font-heading text-[#0f172a]">
+                          See QuickDrop in action
+                        </DialogTitle>
+                        <DialogDescription>
+                          A quick look at how QuickDrop turns incoming files into
+                          organized jobs.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <video
+                        className="aspect-video w-full rounded-lg bg-slate-950 object-contain"
+                        controls
+                        autoPlay
+                        playsInline
+                        preload="metadata"
+                        aria-label="QuickDrop product demo"
+                      >
+                        <source src={DEMO_VIDEO_URL} type="video/mp4" />
+                        Your browser does not support video playback.
+                      </video>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 <ul className="craft-fade-up craft-delay-2 mt-8 space-y-2.5">

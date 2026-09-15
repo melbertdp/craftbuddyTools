@@ -59,6 +59,17 @@ async function networkFirst(request) {
   }
 }
 
+function isVideoRequest(request) {
+  const url = new URL(request.url);
+  return request.destination === "video" || /\.(mp4|webm|ogg)$/i.test(url.pathname);
+}
+
+async function removeCachedVideos() {
+  const cache = await caches.open(CACHE_NAME);
+  const requests = await cache.keys();
+  await Promise.all(requests.filter(isVideoRequest).map((request) => cache.delete(request)));
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL).catch(() => undefined)),
@@ -71,6 +82,7 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then(() => removeCachedVideos())
       .then(() => self.clients.claim()),
   );
 });
@@ -101,6 +113,11 @@ self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
+  // Videos stay network-only and are never included in the PWA offline cache.
+  if (isVideoRequest(request)) {
+    event.respondWith(fetch(request, { cache: "no-store" }));
+    return;
+  }
   if (url.origin !== self.location.origin) return;
   // Never cache API responses or document-processing endpoints.
   if (url.pathname.startsWith("/api/")) return;
