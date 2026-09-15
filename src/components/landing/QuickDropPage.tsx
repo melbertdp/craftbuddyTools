@@ -83,13 +83,13 @@ export function QuickDropPage() {
                     Try QuickDrop
                     <ArrowRight className="size-4" aria-hidden />
                   </a>
-                  <a
+                  {/* <a
                     href="#features"
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#4f46e5]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f8f2]"
                   >
                     <Play className="size-3.5 fill-current" aria-hidden />
                     See demo
-                  </a>
+                  </a> */}
                 </div>
 
                 <ul className="craft-fade-up craft-delay-2 mt-8 space-y-2.5">
