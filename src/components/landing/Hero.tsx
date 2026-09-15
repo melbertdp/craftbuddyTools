@@ -4,7 +4,7 @@ import { ShineBorder } from "../ui/shine-border";
 
 function QuickDropCard() {
   return (
-    <div className="relative mt-14 w-full max-w-[390px] animate-quick-drop lg:absolute lg:right-[7%] lg:top-[250px] lg:mt-0 xl:right-[9%] xl:top-[300px]">
+    <div className="relative z-20 mt-14 w-full max-w-[390px] animate-quick-drop lg:absolute lg:right-[7%] lg:top-[250px] lg:mt-0 xl:right-[9%] xl:top-[300px]">
       <div className="relative rotate-[2deg] rounded-[22px] border border-white/80 bg-[#f8faf4]/95 px-5 py-5 shadow-[0_24px_42px_rgba(47,70,58,0.16)] backdrop-blur-sm sm:px-7 sm:py-6">
         <ShineBorder
           aria-hidden="true"
