@@ -43,9 +43,9 @@ export function ToolCard({
   return (
     <article
       className={cn(
-        "group relative isolate flex min-h-[240px] flex-col overflow-hidden rounded-2xl border p-5 shadow-[0_10px_30px_rgba(34,55,39,0.05)] transition duration-200 ease-out",
+        "group relative isolate flex min-h-[210px] flex-col overflow-hidden rounded-2xl border p-4 shadow-[0_10px_30px_rgba(34,55,39,0.05)] transition duration-200 ease-out",
         "hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(34,55,39,0.08)] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-        "sm:min-h-[260px] sm:p-6",
+        "sm:min-h-[220px] sm:p-5",
         theme.background,
         theme.border,
         className,
@@ -53,7 +53,7 @@ export function ToolCard({
     >
       <div className="flex h-full flex-col sm:max-w-[58%]">
         <SectionLabel className={theme.label}>{category}</SectionLabel>
-        <h2 className="mt-4 font-heading text-[26px] font-bold leading-[1.05] tracking-[-0.035em] text-[#20372b] sm:mt-5 sm:text-[30px]">
+        <h2 className="mt-3 font-heading text-[25px] font-bold leading-[1.05] tracking-[-0.035em] text-[#20372b] sm:mt-4 sm:text-[28px]">
           {external ? (
             <a href={href} className={linkClass}>
               {title}

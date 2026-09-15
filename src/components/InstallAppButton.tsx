@@ -31,24 +31,17 @@ export function InstallAppButton() {
       window.__craftBuddyInstallPrompt = prompt;
       setInstallPrompt(prompt);
     };
-    const handleAppInstalled = () => {
-      setHidden(true);
-      window.__craftBuddyInstallPrompt = undefined;
-      setInstallPrompt(null);
-    };
     const handleOfflineReady = () => setOfflineReady(true);
-
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
     window.addEventListener("craftbuddy-offline-ready", handleOfflineReady);
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", handleAppInstalled);
       window.removeEventListener("craftbuddy-offline-ready", handleOfflineReady);
     };
   }, []);
 
-  if (!offlineReady || !installPrompt || hidden) return null;
+  if (hidden) return null;
+  if (offlineReady && !installPrompt) return null;
 
   async function installApp() {
     if (!installPrompt) return;
@@ -59,24 +52,47 @@ export function InstallAppButton() {
   }
 
   return (
-    <aside className="fixed inset-x-4 top-4 z-50 mx-auto flex max-w-[430px] items-center gap-3 rounded-2xl border border-[#bcd5ff] bg-[#fff] px-4 py-3 shadow-[0_12px_30px_rgba(31,52,87,0.16)] sm:inset-x-auto sm:right-8 sm:ml-auto sm:max-w-[430px]">
-      <img src="/icon-192.png" alt="" className="size-12 shrink-0 rounded-xl object-contain" />
-      <div className="min-w-0 flex-1">
-        <strong className="block text-sm text-[#172238]">Install CraftBuddy</strong>
-        <span className="block text-xs text-[#718096]">Get faster access anytime!</span>
+    <aside className="fixed inset-x-4 bottom-4 z-50 mx-auto w-auto max-w-[340px] md:inset-x-auto md:bottom-auto md:right-8 md:top-6 md:mx-0">
+      <div className="relative flex flex-col items-center">
+        <img src="/baloon.png" alt="" className="relative z-10 h-[230px] w-auto max-w-none" />
+        <div className="relative -mt-[65px] w-full rounded-[28px] border border-[#eae5d7] bg-[#fdfbf4] px-5 pb-5 pt-12 text-center shadow-[0_18px_45px_rgba(31,52,87,0.16)]">
+          <button
+            type="button"
+            className="absolute right-3 top-3 rounded-full bg-white p-1.5 text-[#475569] shadow-[0_4px_12px_rgba(15,23,42,0.14)] transition hover:bg-[#f1f5f9]"
+            onClick={() => setHidden(true)}
+            aria-label="Dismiss install prompt"
+          >
+            <X className="size-4" aria-hidden />
+          </button>
+          <strong className="block text-[17px] font-bold tracking-[-0.01em] text-[#1b2942]">
+            Install CraftBuddy
+          </strong>
+          <p className="mt-1.5 text-sm text-[#8b96a8]">
+            {offlineReady ? "Keep your tools one click away." : "Set up offline access first."}
+          </p>
+          {offlineReady ? (
+            <Button
+              type="button"
+              size="lg"
+              className="mt-4 h-11 w-full rounded-xl bg-[#5d7052] hover:bg-[#4f6449]"
+              onClick={installApp}
+            >
+              <Download aria-hidden />
+              Install app
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="lg"
+              className="mt-4 h-11 w-full rounded-xl bg-[#5d7052] hover:bg-[#4f6449]"
+              onClick={() => window.dispatchEvent(new Event("craftbuddy-open-offline-setup"))}
+            >
+              <Download aria-hidden />
+              Download for offline
+            </Button>
+          )}
+        </div>
       </div>
-      <Button type="button" size="sm" onClick={installApp}>
-        <Download aria-hidden />
-        Install
-      </Button>
-      <button
-        type="button"
-        className="rounded p-1 text-[#9aa7ba] hover:bg-[#f0f4fa] hover:text-[#536175]"
-        onClick={() => setHidden(true)}
-        aria-label="Dismiss install prompt"
-      >
-        <X className="size-4" aria-hidden />
-      </button>
     </aside>
   );
 }

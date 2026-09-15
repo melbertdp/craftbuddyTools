@@ -1,9 +1,9 @@
 import { BrandHeader } from "../BrandHeader";
 
 const NAV = [
-  { href: "#tools", label: "Tools" },
-  { href: "#privacy", label: "Privacy" },
-  { href: "#about", label: "About" },
+  { href: "/#tools", label: "Tools" },
+  { href: "/#privacy", label: "Privacy" },
+  { href: "/#workspace", label: "About" },
 ];
 
 export function SiteHeader() {

@@ -27,7 +27,7 @@ function QuickDropCard() {
               Quick<span className="text-[#668060]">Drop</span>
             </p>
             <p className="mt-2 text-[17px] font-bold leading-none text-[#6f8368] sm:text-[19px]">
-              Coming Soon
+              Available Now!
             </p>
             <p className="mt-2 text-xs text-[#526057] sm:text-[13px]">Get files. Faster.</p>
           </div>
@@ -36,7 +36,7 @@ function QuickDropCard() {
           to="/quickdrop"
           className="mt-4 inline-flex border-t border-[#d9e3d5] pt-3 text-xs font-bold text-[#5d7052] outline-none transition-colors hover:text-[#2f463a] focus-visible:ring-2 focus-visible:ring-[#6f8368]/50"
         >
-          Learn more
+          Get QuickDrop!
         </Link>
       </div>
     </div>

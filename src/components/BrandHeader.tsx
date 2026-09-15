@@ -1,11 +1,9 @@
 "use client";
 
-import { Download, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-
-import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 
 export function BrandHeader({ children }: { children?: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -33,21 +31,6 @@ export function BrandHeader({ children }: { children?: ReactNode }) {
             className="inline-flex shrink-0 items-center justify-center rounded-full border border-[#b8cbb0] p-2 text-[#3d553b] transition hover:border-[#5d7052] hover:bg-[#edf2e9] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6f8368]/60 sm:hidden"
           >
             {menuOpen ? <X className="size-4" aria-hidden /> : <Menu className="size-4" aria-hidden />}
-          </button>
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new Event("craftbuddy-open-offline-setup"))}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#b8cbb0] px-3 py-2 text-xs font-bold text-[#3d553b] transition hover:border-[#5d7052] hover:bg-[#edf2e9] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#6f8368]/60"
-          >
-            <Download className="size-3.5" aria-hidden />
-            <AnimatedGradientText
-              className="hidden sm:inline"
-              colorFrom="#000000"
-              colorTo="#2f463a"
-            >
-              Download
-            </AnimatedGradientText>
-            <span className="sr-only sm:hidden">Download for offline use</span>
           </button>
         </div>
       </div>
