@@ -28,7 +28,7 @@ const linkClass =
   "rounded-2xl outline-none after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus-visible:after:ring-[3px] focus-visible:after:ring-inset focus-visible:after:ring-[#6f8368]/70";
 
 const illustrationClass =
-  "pointer-events-none relative -z-10 mt-6 h-[132px] w-full transition-transform duration-200 ease-out group-hover:-translate-y-[2px] group-hover:translate-x-[3px] motion-reduce:transform-none sm:absolute sm:inset-y-0 sm:right-0 sm:mt-0 sm:h-full sm:w-[44%]";
+  "pointer-events-none relative -z-10 mt-4 h-[110px] w-full transition-transform duration-200 ease-out group-hover:-translate-y-[2px] group-hover:translate-x-[3px] motion-reduce:transform-none sm:absolute sm:inset-y-0 sm:right-0 sm:mt-0 sm:h-full sm:w-[44%]";
 
 export function CraftBuddyProductCard({
   eyebrow,
@@ -45,9 +45,9 @@ export function CraftBuddyProductCard({
   return (
     <article
       className={cn(
-        "group relative isolate flex min-h-[280px] flex-col overflow-hidden rounded-2xl border p-6 shadow-[0_10px_30px_rgba(34,55,39,0.05)] transition duration-200 ease-out",
+        "group relative isolate flex min-h-[220px] flex-col overflow-hidden rounded-2xl border p-5 shadow-[0_10px_30px_rgba(34,55,39,0.05)] transition duration-200 ease-out",
         "hover:-translate-y-[2px] hover:shadow-[0_16px_40px_rgba(34,55,39,0.08)] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-        "sm:min-h-[300px] sm:p-7",
+        "sm:min-h-[240px] sm:p-6",
         theme.background,
         theme.border,
         className,
@@ -55,7 +55,7 @@ export function CraftBuddyProductCard({
     >
       <div className="flex h-full flex-col sm:max-w-[55%]">
         <SectionLabel className={theme.label}>{eyebrow}</SectionLabel>
-        <h3 className="mt-3 font-heading text-[26px] font-bold leading-[1.05] tracking-[-0.03em] text-[#20372b] sm:text-[28px]">
+        <h3 className="mt-2.5 font-heading text-[26px] font-bold leading-[1.05] tracking-[-0.03em] text-[#20372b] sm:text-[28px]">
           <a target="_blank" href={href} className={linkClass}>
             {title}
           </a>
@@ -66,12 +66,12 @@ export function CraftBuddyProductCard({
         {offerNote ? (
           <p className="mt-1 text-[13.5px] leading-5 text-[#5c6a60]">{offerNote}</p>
         ) : null}
-        <p className="mt-2.5 max-w-[32ch] text-[14px] leading-[1.62] text-[#3f4d44]">
+        <p className="mt-2 max-w-[32ch] text-[14px] leading-[1.55] text-[#3f4d44]">
           {description}
         </p>
         <span
           className={cn(
-            "mt-auto inline-flex items-center gap-1.5 pt-5 text-[15px] font-semibold",
+            "mt-auto inline-flex items-center gap-1.5 pt-4 text-[15px] font-semibold",
             theme.cta,
           )}
         >

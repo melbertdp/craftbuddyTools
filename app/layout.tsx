@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { InstallAppButton } from "@/components/InstallAppButton";
 import { OfflineSetupModal } from "@/components/OfflineSetupModal";
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <OfflineSetupModal />
         <InstallAppButton />
         <ServiceWorkerRegistrar />
+        <Analytics />
       </body>
     </html>
   );

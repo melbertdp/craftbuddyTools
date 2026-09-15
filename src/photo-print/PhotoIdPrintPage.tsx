@@ -545,6 +545,7 @@ export default function PhotoIdPrintPage() {
         gapMm,
       );
   const totalPhotos = cells.length;
+  const cuttingMarksEnabled = cutMarks && (gapMm > 0 || marginMm > 0);
   const selectedShirt = availableShirts.find((item) => item.id === shirtId);
   const shirtLabel = selectedShirt
     ? `${selectedShirt.group} · ${selectedShirt.label}`
@@ -1170,7 +1171,7 @@ export default function PhotoIdPrintPage() {
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, sheet.width, sheet.height);
     cells.forEach((cell) => {
-      if (cutMarks) drawTrimMarks(context, cell, scale);
+      if (cuttingMarksEnabled) drawTrimMarks(context, cell, scale);
       drawCover(
         context,
         finalCanvas,
@@ -1194,7 +1195,7 @@ export default function PhotoIdPrintPage() {
       format: [paper.widthMm, paper.heightMm],
       orientation: paper.widthMm > paper.heightMm ? "landscape" : "portrait",
     });
-    if (cutMarks) {
+    if (cuttingMarksEnabled) {
       pdf.setDrawColor(0);
       pdf.setLineWidth(0.2);
       const mark = 3;
@@ -1226,7 +1227,7 @@ export default function PhotoIdPrintPage() {
     pdf.save(`${mixSizes ? "mixed" : photoSize.id}_${totalPhotos}x.pdf`);
   }
 
-  function printPreview() {
+  async function printPreview() {
     if (!finalCanvas) return;
     const data = document.createElement("canvas");
     data.width = Math.round((paper.widthMm / 25.4) * DPI);
@@ -1236,7 +1237,7 @@ export default function PhotoIdPrintPage() {
     context.fillStyle = "#fff";
     context.fillRect(0, 0, data.width, data.height);
     const scale = DPI / 25.4;
-    if (cutMarks) cells.forEach((cell) => drawTrimMarks(context, cell, scale));
+    if (cuttingMarksEnabled) cells.forEach((cell) => drawTrimMarks(context, cell, scale));
     cells.forEach((cell) => {
       drawCover(
         context,
@@ -1247,14 +1248,56 @@ export default function PhotoIdPrintPage() {
         cell.heightMm * scale,
       );
     });
+    // A blob URL prints far more reliably than a multi-megabyte data URL,
+    // which Chrome can render as a blank/grey box in the print preview.
+    const blob = await new Promise<Blob | null>((resolve) =>
+      data.toBlob((value) => resolve(value), "image/png"),
+    );
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
     const popup = window.open("", "_blank", "width=900,height=1000");
-    if (!popup) return;
-    const width = paper.widthMm / 25.4;
-    const height = paper.heightMm / 25.4;
+    if (!popup) {
+      URL.revokeObjectURL(url);
+      return;
+    }
+    const width = paper.widthMm;
+    const height = paper.heightMm;
     popup.document.write(
-      `<!doctype html><title>Print Preview</title><style>@page{size:${width}in ${height}in;margin:0}body{margin:0;background:#525659;font-family:system-ui}.bar{padding:14px 20px;background:#fff;display:flex;justify-content:space-between}.tip{padding:12px 20px;background:#fff8e1;font-size:13px}.sheet{display:flex;justify-content:center;padding:30px}.sheet img{width:${width}in;height:${height}in;background:#fff}</style><div class="bar"><b>Print Preview</b><button onclick="window.print()">Print</button></div><div class="tip"><b>Tip:</b> Use 100% scale / Actual size.</div><div class="sheet"><img src="${data.toDataURL("image/png")}" alt="Print sheet"></div>`,
+      `<!doctype html><html><head><meta charset="utf-8"><title>Print Preview</title><style>
+        @page{size:${width}mm ${height}mm;margin:0}
+        *{box-sizing:border-box}
+        html,body{margin:0;padding:0;background:#525659;font-family:system-ui}
+        .bar{padding:14px 20px;background:#fff;display:flex;justify-content:space-between;align-items:center}
+        .bar button{padding:6px 14px;cursor:pointer}
+        .tip{padding:12px 20px;background:#fff8e1;font-size:13px}
+        .sheet{display:flex;justify-content:center;padding:30px}
+        .sheet img{display:block;width:${width}mm;height:${height}mm;background:#fff;
+          -webkit-print-color-adjust:exact;print-color-adjust:exact}
+        @media print{
+          html,body{width:${width}mm;height:${height}mm;margin:0;padding:0;background:#fff;overflow:hidden}
+          .bar,.tip{display:none!important}
+          .sheet{position:fixed;inset:0;display:block;width:${width}mm;height:${height}mm;padding:0;margin:0;overflow:hidden}
+          .sheet img{width:${width}mm;height:${height}mm}
+        }
+      </style></head><body>
+        <div class="bar"><b>Print Preview</b><button onclick="window.print()">Print</button></div>
+        <div class="tip"><b>Tip:</b> Use 100% scale / Actual size and turn off headers and footers for a borderless sheet.</div>
+        <div class="sheet"><img id="sheet" src="${url}" alt="Print sheet"></div>
+      </body></html>`,
     );
     popup.document.close();
+    const image = popup.document.getElementById(
+      "sheet",
+    ) as HTMLImageElement | null;
+    if (image) {
+      const focus = () => {
+        popup.focus();
+        void image.decode?.().catch(() => {});
+      };
+      if (image.complete) focus();
+      else image.addEventListener("load", focus);
+    }
+    popup.addEventListener("beforeunload", () => URL.revokeObjectURL(url));
   }
 
   return (
@@ -1501,7 +1544,7 @@ export default function PhotoIdPrintPage() {
           <p className="mb-4 mt-2 text-center text-sm font-bold">
             Full print sheet ({basePaper.label})
           </p>
-          <div className="overflow-auto rounded bg-white p-3 shadow-sm">
+          <div className="overflow-auto rounded bg-[#e5e7eb] p-3 shadow-sm">
             <div
               className="relative mx-auto bg-white"
               style={{
@@ -1532,7 +1575,7 @@ export default function PhotoIdPrintPage() {
                       />
                     )}
                   </div>
-                  {cutMarks && (
+                  {cuttingMarksEnabled && (
                     <div
                       className="pointer-events-none absolute z-0"
                       style={{
@@ -1838,7 +1881,8 @@ export default function PhotoIdPrintPage() {
                 <input
                   type="checkbox"
                   className="mt-0.5"
-                  checked={cutMarks}
+                  checked={cuttingMarksEnabled}
+                  disabled={gapMm === 0 && marginMm === 0}
                   onChange={(event) => setCutMarks(event.target.checked)}
                 />
                 <span>
